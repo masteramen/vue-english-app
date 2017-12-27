@@ -227,7 +227,7 @@
   .articles
     position: fixed
     width: 100%
-    top: 44px
+    top: 50px
     bottom: 0
     .toplist
       height: 100%
@@ -264,7 +264,7 @@
           display: flex
           flex-direction: column
           justify-content: center
-          padding: 0 10px
+          padding: 0 0 0 10px
           height: 100px
           overflow: hidden
           background: $color-highlight-background

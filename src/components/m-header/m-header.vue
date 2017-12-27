@@ -1,7 +1,7 @@
 <template>
   <div class="m-header">
     <i class="icon-refresh" @click.stop="refresh()"></i>
-    <h1 class="text">English News</h1>
+    <h1 class="text">News</h1>
     <router-link tag="div" class="mine" to="/user">
       <i class="icon-download" @click.stop="triggerDownloadAll(!downloadAll)"></i>
     </router-link>
@@ -41,6 +41,7 @@ import Bus from 'common/js/bus'
     height: 44px
     text-align: center
     color: $color-theme
+    background: #333;
     font-size: 0
     .icon-refresh
       position: absolute

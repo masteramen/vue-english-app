@@ -14,8 +14,7 @@
           <div class="back" @click="back">
             <i class="icon-back"></i>
           </div>
-          <div class="title" v-html="currentSong.title"></div>
-          <div class="subtitle"  v-html="currentSong.singer"></div>
+          <div class="title">正文</div>
         </div>
         <div class="middle"
              @touchstart.prevent="middleTouchStart"
@@ -380,10 +379,9 @@
       this.currentTime = e.target.currentTime
       if (window.remoteControls && device.platform == 'iOS') {
         window.remoteControls.updateMetas(success => {
-          console.log(success);
         }, fail => {
           console.log(fail);
-        }, ['artist', this.$refs.audio.getAttribute('title'), 'album', '', this.duration, this.duration - this.currentTime]);
+        }, ['artist', this.currentSong.title, 'album', '', this.duration, this.duration - this.currentTime]);
       }
     },
     format(interval) {
@@ -491,14 +489,6 @@
 
       this.$refs.lyricList.$el.style['opacity'] = 1 - this.touch.percent
       this.$refs.lyricList.$el.style[transitionDuration] = 0
-
-      /*
-      this.$refs.lyricList.$el.style[transform] = `translate3d(${offsetWidth}px,0,0)`
-      this.$refs.lyricList.$el.style[transitionDuration] = 0
-
-      this.$refs.middleR.style.opacity = 1 - this.touch.percent
-      this.$refs.middleR.style[transitionDuration] = 0
-      */
     },
     middleTouchEnd() {
       let offsetWidth
@@ -588,16 +578,21 @@
           this.getLyric()
         }
       ).catch(() => {}).then(() => {
-        this.getLyric()
-        //this.togglePlaying()
-        this.play()
+          this.getLyric()
+
+        if(this.playing){
+          //this.togglePlaying()
+          this.play()
+        }
+        this.ready()
+
       })
       Bus.$emit('selected', newSong.id);
 
     },
     playing(newPlaying) {
       this.$nextTick(() => {
-        newPlaying ? player.play() : player.pause()
+        newPlaying ? player.play(this.currentSong) : player.pause()
 
       })
     }
@@ -650,9 +645,9 @@
             transform: rotate(-90deg)
         .title
           margin: 0 auto
-          margin-left: 40px
+          margin-left: 0px
           line-height: 40px
-          text-align: left
+          text-align: center
           no-wrap()
           font-size: $font-size-large
           color: $color-text
@@ -664,8 +659,8 @@
       .middle
         position: fixed
         width: 100%
-        top: 80px
-        bottom: 170px
+        top: 50px
+        bottom: 160px
         white-space: nowrap
         font-size: 0
         .middle-r
