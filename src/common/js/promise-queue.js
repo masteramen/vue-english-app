@@ -89,7 +89,7 @@
      * @param {Function} promiseGenerator
      * @return {LocalPromise}
      */
-    Queue.prototype.add = function (key,promiseGenerator) {
+    Queue.prototype.add = function (promiseGenerator,opt) {
         var self = this;
         return new LocalPromise(function (resolve, reject, notify) {
             // Do not queue to much promises
@@ -104,7 +104,8 @@
                 promiseGenerator: promiseGenerator,
                 resolve: resolve,
                 reject: reject,
-                notify: notify || noop
+                notify: notify || noop,
+                opt,
             });
 
             self._dequeue();

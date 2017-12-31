@@ -135,6 +135,9 @@
 
             }).then(count => {
               if (count <= 0) this.pullDownTip = '已经是最新的了'
+                else {
+                  this._getLatestArticles()
+                }
             }).then(()=>{
               this.$refs.toplist.forceUpdate(true)
             })

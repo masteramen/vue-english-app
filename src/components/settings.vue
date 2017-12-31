@@ -23,7 +23,9 @@
         </mt-cell>
         <mt-cell title="占用空间大小"></mt-cell>
         <mt-cell title="已使用存储"><mt-switch v-model="value"></mt-switch></mt-cell>
-        <mt-cell title="版本" :value="currentWebVersion" @click="clickVersion">{{clickVersionCount}}</mt-cell>
+        <div @click="clickVersion">
+        <mt-cell title="版本" :value="currentWebVersion" >{{clickVersionCount}}</mt-cell>
+        </div>
         <mt-cell title="已读文章数" :value="currentWebVersion"></mt-cell>
         <mt-cell title="已听过分钟" :value="currentWebVersion"></mt-cell>
         <mt-cell
@@ -82,7 +84,7 @@
         this.show=false
       },
       clickVersion(){
-        this.clickVersionCount++
+        this.clickVersionCount+=1
         if(this.clickVersionCount>3){
           new vConsole()
         }

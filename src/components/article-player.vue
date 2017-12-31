@@ -6,7 +6,13 @@
                 @leave="leave"
                 @after-leave="afterLeave"
     >
-      <div class="normal-player" v-show="fullScreen">
+      <div class="normal-player" v-show="fullScreen"  ref="playerWrap"
+      v-swipeleft = "swiper"    
+      v-panright = "swiper"    
+      v-panleft = "swiper"    
+      v-swiperight = "swiper"  
+      v-panend="swiper"
+      >
         <div class="background">
           <img width="100%" height="100%" :src="currentSong.image">
         </div>
@@ -17,9 +23,7 @@
           <div class="title">正文</div>
         </div>
         <div class="middle"
-             @touchstart.prevent="middleTouchStart"
-             @touchmove.prevent="middleTouchMove"
-             @touchend="middleTouchEnd"
+              ref="middle"
         >
         <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines">
           <div class="lyric-wrapper">
@@ -70,8 +74,8 @@
             <div class="icon i-right" :class="disableCls">
               <i @click="next" class="icon-next"></i>
             </div>
-            <div class="icon i-right">
-              <i class="icon-not-favorite"></i>
+            <div class="icon i-right" :class="lyricFollowCls">
+              <i class="icon-book" @click="toggleLyric"></i>
             </div>
           </div>
         </div>
@@ -139,6 +143,7 @@
 
   const transform = prefixStyle('transform')
   const transitionDuration = prefixStyle('transitionDuration')
+  const ransitionDurationValue=200
 
 
   export default {
@@ -152,7 +157,10 @@
       currentLineNum: 0,
       currentShow: 'lyric',
       playingLyric: '',
-      audioUrl:''
+      audioUrl:'',
+      lyricFollow:true,
+      needUpdateRemoteControl:true,
+      lastSwipeTime:''
     }
   },
   created() {
@@ -161,29 +169,47 @@
   },
   mounted() {
     this.$nextTick(() => {
+
+      this.$refs.playerWrap.style['width']=window.innerWidth+'px'
       player.setAudio(this.$refs.audio)
       let _this = this
+      console.log('bind RemoteCommand position');
+    RemoteCommand.on('position',function(position){
+      console.log('seek to position:'+position);
+      player.seekTo(position)
+
+    })
+      document.addEventListener("pause", function(event) {
+        _this.enableOrDisableScreenLock(_this.fullScreen)
+
+      })
+      document.addEventListener("resume", function(event) {
+        _this.enableOrDisableScreenLock(_this.fullScreen)
+      })
 
       document.addEventListener("remote-event", function(event) {
 
-        console.log(event)
+            console.log(event)
 
-        switch (event.remoteEvent.subtype) {
-          case 'nextTrack':
-            _this.next()
-            break
-          case 'prevTrack':
-            _this.prev()
-            break
-          case 'pause':
-          case 'play':
-            console.log('togglePlaying')
-            _this.togglePlaying()
-            break
+            switch (event.remoteEvent.subtype) {
+              case 'nextTrack':
+                _this.next()
+                break
+              case 'prevTrack':
+                _this.prev()
+                break
+              case 'pause':
+              case 'play':
+                console.log('togglePlaying')
+                _this.togglePlaying()
+                break
 
-        }
+            }
 
       })
+
+
+
       let that=this
       $('.lyric-wrapper').on('click','span',function(){
         $(this).toggleClass("mark")
@@ -228,6 +254,9 @@
     disableCls() {
       return this.songReady ? '' : 'disable'
     },
+    lyricFollowCls(){
+      return this.lyricFollow?'':'not-lyricFollow'
+    },
     percent() {
       return this.currentTime / this.duration
     },
@@ -251,15 +280,26 @@
     },
     back() {
       this.setFullScreen(false)
-      window.plugins.insomnia.allowSleepAgain()
+
     },
     open() {
       this.setFullScreen(true)
-      window.plugins.insomnia.keepAwake()
+
+    },
+    enableOrDisableScreenLock(value){
+        if (value) {
+          console.log('keep awake');
+          window.plugins.insomnia.keepAwake()
+
+        } else {
+          console.log('keep allowSleepAgain');
+          window.plugins.insomnia.allowSleepAgain()
+
+        }
     },
     enter(el, done) {
       const { x, y, scale } = this._getPosAndScale()
-
+      
       let animation = {
         0: {
           transform: `translate3d(${x}px,${y}px,0) scale(${scale})`
@@ -298,6 +338,7 @@
       this.$refs.cdWrapper.style[transform] = ''
     },
     togglePlaying() {
+      console.log('togglePlaying');
       if (!this.songReady) {
         return
       }
@@ -305,6 +346,11 @@
       if (this.currentLyric) {
         this.currentLyric.togglePlay()
       }
+    },
+    toggleLyric(){
+
+      this.lyricFollow=!this.lyricFollow
+
     },
     end() {
       if (this.mode === playMode.loop) {
@@ -326,8 +372,7 @@
       if (!this.songReady) {
         return
       }
-      console.log('next...')
-      player.pause().seekTo(0)
+
       this.currentTime = 0
 
       if (this.playlist.length === 1) {
@@ -339,9 +384,6 @@
         }
         this.setCurrentIndex(index)
 
-        if (!this.playing) {
-          this.togglePlaying()
-        }
       }
       this.songReady = false
     },
@@ -349,7 +391,6 @@
       if (!this.songReady) {
         return
       }
-      player.pause().seekTo(0)
       this.currentTime = 0
       if (this.playlist.length === 1) {
         this.loop()
@@ -359,30 +400,38 @@
           index = this.playlist.length - 1
         }
         this.setCurrentIndex(index)
-
-        if (!this.playing) {
-          this.togglePlaying()
-        }
       }
       this.songReady = false
     },
     ready() {
       this.songReady = true
+
+
     },
     error() {
       console.log('error')
-      // this.songReady = true
+      // this.songReady = true   
       //this.next()
       this.togglePlaying()
     },
     updateTime(e) {
       this.currentTime = e.target.currentTime
-      if (window.remoteControls && device.platform == 'iOS') {
-        window.remoteControls.updateMetas(success => {
-        }, fail => {
-          console.log(fail);
-        }, ['artist', this.currentSong.title, 'album', '', this.duration, this.duration - this.currentTime]);
+      if (device.platform == 'iOS'  && window.remoteControls  &&this.needUpdateRemoteControl) {
+        setTimeout(() => {
+
+          let params = ['artist', this.currentSong.title, 'album', this.currentSong.picUrl, this.duration, this.currentTime];
+
+          window.remoteControls.updateMetas(success => {
+            this.needUpdateRemoteControl = false
+          }, fail => {
+            console.log(fail);
+          }, params);
+
+
+        }, 10)
+
       }
+
     },
     format(interval) {
       interval = interval | 0
@@ -448,20 +497,66 @@
         this.currentLineNum = lineNum
         if (!this.$refs.lyricList.scrollToElement) return
         let curLine = this.$refs.lyricLine[lineNum]
-        if ($(curLine).offset().top < $('.middle').offset().top || $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()) {
-          this.$refs.lyricList.scrollToElement(curLine, 1000)
+        if(this.lyricFollow){
+          if ($(curLine).offset().top < $('.middle').offset().top || $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()) {
+            this.$refs.lyricList.scrollToElement(curLine, 1000)
+          }
         }
-        /*if (lineNum > 5) {
-            let lineEl = this.$refs.lyricLine[lineNum - 5]
-        
-            this.$refs.lyricList.scrollToElement(lineEl, 1000)
-          }*/
-        else {
-          //this.$refs.lyricList.scrollTo(0, 0, 1000)
-        }
+
         this.playingLyric = txt
       })
 
+
+    },
+    swiper(s,e){
+
+      this.$refs.playerWrap.style['width']=window.innerWidth+'px'
+      //this.$refs.playerWrap.style['left']=s.deltaX+'px'
+      let playWrapLeft=0
+
+      if(s.type=='swiperight'){
+
+        this.lastSwipeTime = new Date().getTime()
+        this.$refs.playerWrap.style[transitionDuration] = ((window.innerWidth-s.deltaX)/window.innerWidth*ransitionDurationValue/2)+'ms';
+        this.$refs.playerWrap.style['left']=(window.innerWidth+s.deltaX/s.deltaTime)+'px';
+        setTimeout(()=>{
+          this.back()
+        },ransitionDurationValue);
+        
+               
+      }else if(s.type=='panend'){
+
+        //fixed swipe event before panend event
+        if(new Date().getTime()-this.lastSwipeTime<ransitionDurationValue){
+         return
+        }
+        if(s.deltaX>window.innerWidth/3){
+          this.back()
+        }else{
+          this.$refs.playerWrap.style[transitionDuration] = s.deltaX/window.innerWidth*ransitionDurationValue+'ms'
+          this.$refs.playerWrap.style['left']='0px'       
+        }
+
+
+      }else if( (s.type=='panright'||s.type=='panleft') && Math.abs(s.deltaX)>Math.abs(s.deltaY)){
+
+        console.log(s.deltaTime);
+        this.$refs.playerWrap.style[transitionDuration] = `0ms`
+       
+        this.$refs.playerWrap.style['left']=(s.deltaX+s.deltaX/s.deltaTime)+'px'
+
+      }
+
+    },
+    playWrapTouchStart(e){
+     this.middleTouchStart(e);
+
+    },
+    playWrapTouchMove(e){
+     this.middleTouchMove(e);
+    },
+    playWrapTouchEnd(e){
+     this.middleTouchEnd(e);
 
     },
     middleTouchStart(e) {
@@ -469,8 +564,11 @@
       const touch = e.touches[0]
       this.touch.startX = touch.pageX
       this.touch.startY = touch.pageY
+      this.$refs.playerWrap.style['width']=window.innerWidth+'px'
+
     },
-    middleTouchMove(e) {
+    middleTouchMove2(e) {
+      /*
       if (!this.touch.initiated) {
         return
       }
@@ -481,19 +579,55 @@
         return
       }
       const left = this.currentShow === 'lyric' ? 0 : -window.innerWidth
+
+      if(this.currentShow === 'lyric' && deltaX >0 ){
+        this.$refs.playerWrap.style['left']=deltaX+'px'
+        //this.$refs.middle.style['left']=deltaX+'px'
+        return
+      }
+
       const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + deltaX))
       this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
 
-      this.$refs.middleR.style[transform] = `translate3d(${offsetWidth}px,0,0)`
-      this.$refs.middleR.style[transitionDuration] = 0
+      requestAnimationFrame(()=>{
+        this.$refs.middleR.style[transform] = `translate3d(${offsetWidth}px,0,0)`
+        this.$refs.middleR.style[transitionDuration] = 0
 
-      this.$refs.lyricList.$el.style['opacity'] = 1 - this.touch.percent
-      this.$refs.lyricList.$el.style[transitionDuration] = 0
+        this.$refs.lyricList.$el.style['opacity'] = 1 - this.touch.percent
+        this.$refs.lyricList.$el.style[transitionDuration] = 0
+      })
+*/
     },
-    middleTouchEnd() {
+    middleTouchEnd2(e) {
+      /*
       let offsetWidth
       let opacity
+      console.log(this.$refs.playerWrap.style.left);
+      let playWrapLeft=parseInt(this.$refs.playerWrap.style.left);
+      if(playWrapLeft>0){
 
+        if(playWrapLeft>window.innerWidth/3){
+            playWrapLeft=window.innerWidth
+
+
+        }else{
+          playWrapLeft=0
+        }
+
+        this.$refs.playerWrap.style[transitionDuration] = `500ms`
+        this.$refs.playerWrap.style['left']=playWrapLeft+'px'
+        //this.$refs.middle.style['left']=playWrapLeft+'px'
+        setTimeout(()=>{
+          if(parseInt(this.$refs.playerWrap.style.left)>0){
+            this.setFullScreen(false)
+          }
+          this.$refs.playerWrap.style[transitionDuration] = `0ms`
+
+        },100)
+
+        e.preventDefault();
+        return
+      }
       if (this.touch.percent > 0.3) {
 
         if (this.currentShow === 'cd') {
@@ -529,6 +663,7 @@
       })
 
       this.touch.initiated = false
+      */
     },
     _fullZero(num, n = 2) {
       let len = num.toString().length
@@ -571,7 +706,10 @@
       }
       if (this.currentLyric) {
         this.currentLyric.stop()
-      }
+        this.currentLyric=null
+        }
+
+      
       downloadArtile(newSong,
         evt => { console.log(evt) },
         lrc => {
@@ -592,9 +730,27 @@
     },
     playing(newPlaying) {
       this.$nextTick(() => {
+        //newPlaying?this.$refs.audio.play():this.$refs.audio.pause()
         newPlaying ? player.play(this.currentSong) : player.pause()
 
       })
+    },
+    fullScreen(value) {
+      this.enableOrDisableScreenLock(value)
+      this.$refs.playerWrap.style[transitionDuration] = ransitionDurationValue+'ms'
+      this.$refs.playerWrap.style['left']=window.innerWidth+'px'
+      let left = 0
+      if(!value){
+        left = window.innerWidth
+      }
+
+      requestAnimationFrame(()=>{
+
+        this.$refs.playerWrap.style['left']=left+'px'
+
+      })
+
+
     }
   },
   components: {
@@ -657,7 +813,7 @@
           font-size: $font-size-medium
           color: $color-text
       .middle
-        position: fixed
+        position: absolute
         width: 100%
         top: 50px
         bottom: 160px
@@ -712,10 +868,10 @@
           height: 100%
           overflow: hidden
           .lyric-wrapper
-            width: 80%
-            margin: 0 auto
+           
+            margin: 0 20px
             overflow: hidden
-            text-align: center
+            text-align: left
             .text
               .mark
                 font-weight:bold
@@ -773,6 +929,8 @@
             color: $color-theme
             &.disable
               color: $color-theme-d
+            &.not-lyricFollow
+              color:#ccc
             i
               font-size: 30px
           .i-left
@@ -787,15 +945,11 @@
           .icon-favorite
             color: $color-sub-theme
       &.normal-enter-active, &.normal-leave-active
-        transition: all 0.4s
+        transition: all 1s
+        transition: all 1s cubic-bezier(0, 1, 1, 0.46)
         .top, .bottom
-          transition: all 0.4s cubic-bezier(0.86, 0.18, 0.82, 1.32)
-      &.normal-enter, &.normal-leave-to
-        opacity: 0
-        .top
-          transform: translate3d(0, -100px, 0)
-        .bottom
-          transform: translate3d(0, 100px, 0)
+          transition: all 1s cubic-bezier(0.86, 0.18, 0.82, 1.32)
+      
     .mini-player
       display: flex
       align-items: center

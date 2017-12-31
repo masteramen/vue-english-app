@@ -15,6 +15,8 @@ import VueLazyLoad from 'vue-lazyload'
 import 'common/stylus/index.styl'
 import  * as db from 'common/db'
 import {downloadArtilePic} from 'common/js/service'
+import * as touch from 'common/js/touch'  
+
 import $ from 'jquery'
 window.$=$
 //import vConsole from 'vconsole'

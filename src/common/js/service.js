@@ -250,7 +250,7 @@ export function downloadArtile(article,onDoneLRC,onDoneAudio){
 
 				let tasks=[(article)=>{
 					
-						download(article.lrc,`${article.id}.lrc`).then(lrc=>{
+						return download(article.lrc,`${article.id}.lrc`).then(lrc=>{
 							db.update(article.id,'CONTENT_URL',lrc)
 							//article.lrc=lrc
 							onDoneLRC&&onDoneLRC(lrc)
@@ -259,7 +259,7 @@ export function downloadArtile(article,onDoneLRC,onDoneAudio){
 
 				},
 				(article)=>{
-						download(article.url,`${article.id}.mp3`,(evt)=>{
+						return download(article.url,`${article.id}.mp3`,(evt)=>{
 						  	
 						  	if (evt.lengthComputable) {
 						  	    article.total=evt.total
@@ -276,7 +276,7 @@ export function downloadArtile(article,onDoneLRC,onDoneAudio){
 					})			
 				},
 				(article)=>{
-						download(article.picUrl,`${article.id}.jpg`).then(url=>{							
+						return download(article.picUrl,`${article.id}.jpg`).then(url=>{							
 							db.update(article.id,'IMG_URL',url)
 					})			
 				}				
@@ -286,7 +286,7 @@ export function downloadArtile(article,onDoneLRC,onDoneAudio){
 				let promise = Promise.resolve();
 				for (let i = 0; i < tasks.length; i++) {
 				    let task = tasks[i];
-				    promise = promise.then(task(article)).then(()=>{
+				    promise = promise.then(()=>task(article)).then(()=>{
 
 				    	console.log('task done')
 				    });
@@ -295,34 +295,18 @@ export function downloadArtile(article,onDoneLRC,onDoneAudio){
 
 }
 
+
+let downLoadQueue = new Queue(1);
+
 export function downloadAllArticles(articles){
 
-	/*let i=0
-	var d=()=>{
-	if(articles.length>i){
-		let article=articles[i]
-		downloadArtile(articles[i])
-		.then(()=>{
-			console.log('download article ok') })
-		.catch((err)=>{
-		console.log('download article fail')
-			console.log(err)
-		}).then(()=>{
-			i++
-			d()
-		})
 
-	}
-
-	}
-	d()*/
-
-let downLoadQueue = new Queue(2, Infinity);
 articles.forEach(article=>{
 
-	downLoadQueue.add(article.id,function () {
+	downLoadQueue.add(function () {
+		console.log('download .........'+article.id);
         return downloadArtile(article);
-    }).then(()=>{
+    },article).then(()=>{
     	console.log(`download artile ${article.id}  ok`);
     }).catch(err=>{console.log(`dowload article ${article.id} fail.`)})
 })
