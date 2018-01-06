@@ -284,9 +284,37 @@ function caculateLyric(html,article){
 	}
 	if(content.length>1)
 	    str+='\n'+content[1]
+	 str = str.split(/\n/).map(x=>  x.match(/^\[\d+/)?x.replace(/([a-z]+)/gi,"<span>$1</span>"):x).join('\n')
+
 	return str
 }
-export function downloadArtilePic(article){
+
+export function downloadArtilePic(article, onProgress) {
+  let localFile = `${article.id}.jpg`
+  return fs.exists(localFile).then(exists => {
+
+    if (exists) {
+      let url = fs.toURLSync(localFile)
+      console.log(url)
+      return url;
+    } else {
+      return Promise.reject()
+    }
+  }).catch(err => {
+    let nativeUrl = fs.toURLSync(localFile)
+    return fs.download(article.picUrl, nativeUrl, {}, onProgress).then(ret => {
+    	db.update(article.id,'IMG_URL',nativeUrl)
+
+      return nativeUrl;
+    }).catch(err => {
+      //console.log(err);
+      console.log('err');
+    })
+  })
+
+}
+
+/*export function downloadArtilePic(article){
 	let tasks=[
 	(article)=>{
 			download(article.picUrl,`${article.id}.jpg`).then(localurl=>{	
@@ -305,9 +333,9 @@ export function downloadArtilePic(article){
 	    });
 	}
 	return promise
-}
+}*/
 
-function downloadLyric(article) {
+function downloadLyric(article,onProgress) {
 
 	let localUrl = `${article.id}.lrc`
 
