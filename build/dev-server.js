@@ -173,6 +173,14 @@ function httpListener(request, response,filename) {
     responseHeaders, fs.createReadStream(filename, { start: start, end: end }));
 }
 
+apiRoutes.all('*', function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS");
+    //res.header("X-Powered-By",' 3.2.1')
+    //res.header("Content-Type", "application/json;charset=utf-8");
+    next();
+});
 
 apiRoutes.get('/url', function(req, res) {
 	console.log(req.query)
@@ -242,6 +250,7 @@ function waitUntil(boolFn, callback, delay) {
 }
 
 function download(req,url,res,type){
+  
     var localFile = '/Users/alexwang/data/'+req.url.split(/\?/)[0].split('/').join('_')+type
     let tmp=localFile+'.tmp'
 

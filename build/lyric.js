@@ -10,8 +10,12 @@
         var $ = require('cheerio')
 
           mp3Duration(mp3, function (err, duration) {
+
+
             if (err) return console.log(err.message);
-            console.log('Your file is ' + duration + ' seconds long');
+
+
+           console.log('Your file is ' + duration + ' seconds long');
            let html=htmlcontent.replace(/<\/p>/ig,'</p>\n')
            var text= $(html).text()
            var content=text.split('_______________________________________________________________')
@@ -61,6 +65,8 @@
               str+='\n'+content[1]
 
           console.log(str);
+
+
           return resolve(str)
           });
     })
