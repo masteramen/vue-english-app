@@ -13,7 +13,7 @@ import store from './store'
 import fastclick from 'fastclick'
 import VueLazyLoad from 'vue-lazyload'
 import 'common/stylus/index.styl'
-import  * as db from 'common/db'
+
 import {downloadArtilePic} from 'common/js/service'
 import * as touch from 'common/js/touch'  
 
@@ -50,7 +50,7 @@ if(device.platform!='browser'){
 
 }
 
-db.initialize()
+
 Vue.use(VueLazyLoad, {
 	loading:require('common/image/default.png')
 })

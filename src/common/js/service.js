@@ -6,8 +6,18 @@ import axios from 'axios'
 import Queue from 'common/js/promise-queue'
 import {readFile,saveFile} from 'common/js/FileUtils'
 import * as db from 'common/db'
+import Bus from 'common/js/bus'
+import CordovaPromiseFS from 'common/js/promise-fs'
 
 
+
+
+const fs = CordovaPromiseFS({
+  persistent: true, // or false 
+  storageSize: 600*1024*1024, // storage size in bytes, default 20MB 
+  concurrency: 3, // how many concurrent uploads/downloads? 
+  Promise: Promise // Your favorite Promise/A+ library! 
+});
 
 const host='http://192.168.1.126:8080'
 
@@ -145,12 +155,16 @@ function requestFS(filename,callback,options={create: true, exclusive: false }){
 }
 
 
-function download(url,filename,onProgress){
+function download(url,filename,onProgress,handleContent,responseType='arraybuffer'){
 
 	console.log('download url:'+url)
 	if(!url)return Promise.reject(url)
 	if(!url.match(/^http[s]*/)) return Promise.reject(url)
 
+
+		if(device.platform=='browser'&&url.indexOf('http')==0&&url.indexOf(host)===-1){
+				url=host+'/api/url?url='+url
+		}
 
 
 	return new Promise((resolve,reject)=>{
@@ -166,14 +180,14 @@ function download(url,filename,onProgress){
 			const data = Object.assign({},{},{})
 			axios.get(url,{
 				params:data,
-		  		responseType:'arraybuffer',
+		  		responseType:responseType,
 		  		onDownloadProgress:onProgress,
 		  		headers: {
 		  		 }
 			})
 			.then(response=>{
 
-				writeFile(fileEntry,response.data,0).then(url=>{
+				writeFile(fileEntry,handleContent&&handleContent(response.data)||response.data,0).then(url=>{
 					resolve(url)
 				})
 
@@ -225,10 +239,58 @@ function download(url,filename,onProgress){
 
      }
 
+function caculateLyric(html,article){
+
+	let content=$(html).find('#content').text().split('_______________________________________________________________')
+	
+	
+	let duration = article.total/2733529*170
+
+	let  text=content[0]
+
+
+	let timer=0
+	let str=`[ti:${article.title}]\r\n`
+	str+=`[by:${article.referer}]\n`
+	let fixnum=n=>{return (Array(2).join('0') + n).slice(-2) }
+	var lines=text.replace(/\n+/g,'\n').split(/\n/).filter(x=>x)
+
+	let timeLines=lines.filter(x=>x.trim().match(/^[[]*\d+:\d+/))
+	if(timeLines.lenght>3){
+	  str=+text.replace(/(\d+(:\d+)+)/g,'[$1]')
+
+	}else{
+
+	   var words=text.split(/\s+/).filter(x=>x)
+	   var wordTime=duration/words.length
+	   console.log(wordTime)
+
+	   console.log(words)
+	  console.log('lines:');
+	  console.log(lines)
+
+	  lines.forEach(line=>{
+
+	    let wc= line.split(/\s+/).filter(x=>x).length
+	    let takeTImes=wc*wordTime
+	    let m= fixnum(parseInt(timer/60))
+	    let s= fixnum(parseInt(timer%60))
+	    let ms= fixnum(0)
+
+	    str+=`[${m}:${s}.${ms}]${line}\r\n`
+	    timer+=takeTImes
+	  })
+
+	}
+	if(content.length>1)
+	    str+='\n'+content[1]
+	return str
+}
 export function downloadArtilePic(article){
 	let tasks=[
 	(article)=>{
-			download(article.picUrl,`${article.id}.jpg`).then(localurl=>{							
+			download(article.picUrl,`${article.id}.jpg`).then(localurl=>{	
+				console.log(`localurl:${localurl}`);						
 				db.update(article.id,'IMG_URL',localurl)
 		})			
 	}				
@@ -244,13 +306,74 @@ export function downloadArtilePic(article){
 	}
 	return promise
 }
-export function downloadArtile(article,onDoneLRC,onDoneAudio){
+
+function downloadLyric(article) {
+
+	let localUrl = `${article.id}.lrc`
+
+	return  fs.exists(localUrl)
+	.then(exists=>{
+		console.log(exists);
+		if(exists){
+			return fs.read(`${article.id}.lrc`)
+		}else{
+
+			return Promise.reject()
+		}
+	}).catch(err=>{
+
+		let nativeUrl = fs.toURLSync(`${article.id}.lrc`)
+		console.log(nativeUrl);
+		return fs.download(article.lrc, nativeUrl).then(ret => {
+
+		  return fs.read(`${article.id}.lrc`).then(html => {
+		    let lyric = caculateLyric(html, article)
+		    fs.write(`${article.id}.lrc`, lyric)
+		    db.update(article.id, 'CONTENT_URL', nativeUrl)
+		    console.log(lyric);
+		    return lyric;
+		  })
+
+		}).catch(err => {
+		  console.log(err);
+		  console.log('err');
+		})
+	})
+
+}
+function downloadAudio(article, onProgress) {
+  let localFile = `${article.id}.mp3`
+  return fs.exists(localFile).then(exists => {
+
+    if (exists) {
+      let url = fs.toURLSync(localFile)
+      console.log(url)
+      return url;
+    } else {
+      return Promise.reject()
+    }
+  }).catch(err => {
+    let nativeUrl = fs.toURLSync(localFile)
+    return fs.download(article.url, nativeUrl, {}, onProgress).then(ret => {
+      return nativeUrl;
+    }).catch(err => {
+      //console.log(err);
+      console.log('err');
+    })
+  })
+
+}
+
+
+export function downloadArtile(article,onDoneLRC,onDoneAudio,notupdateArticleProgeress){
 
 				console.log('downloadArticle...')
 
 				let tasks=[(article)=>{
-					
-						return download(article.lrc,`${article.id}.lrc`).then(lrc=>{
+
+						return download(article.lrc,`${article.id}.lrc`,null,html=>{
+							return caculateLyric(html,article)
+						},'text').then(lrc=>{
 							db.update(article.id,'CONTENT_URL',lrc)
 							//article.lrc=lrc
 							onDoneLRC&&onDoneLRC(lrc)
@@ -262,16 +385,20 @@ export function downloadArtile(article,onDoneLRC,onDoneAudio){
 						return download(article.url,`${article.id}.mp3`,(evt)=>{
 						  	
 						  	if (evt.lengthComputable) {
-						  	    article.total=evt.total
-						  	    article.downloaded=evt.loaded
+						  		if(!notupdateArticleProgeress){
+						  			article.total=evt.total
+						  			article.downloaded=evt.loaded
+						  		}
+
 						  	  } else {
 						  	  	console.log(evt)
 						  	  }  
 
 				}).then(url=>{
 							db.update(article.id,'AUDIO_URL',url)
-							db.update(article.id,'AUDIO_SIZE',article.total)
-							db.update(article.id,'AUDIO_LOADED',article.downloaded)
+							db.update(article.id,'AUDIO_BYTES',article.total)
+							db.update(article.id,'AUDIO_LOADED',article.total)
+							article.url=url
 							onDoneAudio&&onDoneAudio()
 					})			
 				},
@@ -335,15 +462,12 @@ export function fetchLatest(lastTime) {
 
 
 export  class Article {
-  constructor({id,title,lrc, url,picUrl,total,downloaded,postDate}) {
-	this.id=id
-    this.title = title
-    this.lrc = lrc
-    this.url = url
-    this.picUrl = picUrl
-    this.total=total
-    this.downloaded=downloaded
-    this.postDate=postDate
+  constructor(data) {
+  	this.data=data
+  	for(let k in data){
+  		this[k]=data[k]
+
+  	}
   }
 
   getLyric() {
@@ -351,89 +475,43 @@ export  class Article {
     console.log('get lyric')
 
     if (this.lyric) {
-      return Promise.resolve(this.lyric)
+      return Promise.resolve(this.data.lyric)
     }
 
     if (!this.lrc) {
-      return new Promise((resolve, reject) => {
-        reject('no lyric')
-      })
+    	return Promise.reject('lrc empty')
     }
-    let that = this
-    return new Promise((resolve, reject) => {
+    
+    return downloadLyric(this);
+   
+  }
+  getAudio(onProgress){
+  	console.log(this.url);
+  	if (!this.url) {
+  		return Promise.reject('url empty')
+  	}
 
-        window.requestFileSystem(LocalFileSystem.PERSISTENT, 0, function(fs) {
-          console.log('file system open: ' + fs.name);
-          let filename = that.id + '.lrc'
-          fs.root.getFile(filename, { create: false, exclusive: false }, function(fileEntry) {
-
-            console.log('fileEntry is file? ' + fileEntry.isFile.toString());
-
-            fileEntry.file(f => {
-
-              if (f.size > 0) {
-                //console.log('file exists, size:'+f.size)
-                console.log(f)
-                console.log(fileEntry.toURL())
-                console.log(f.localURL)
-                let lurl = f.localURL || fileEntry.toURL()
-                console.log('lurl:' + lurl);
-                axios.get(lurl)
-                .then((res) => {
-                  return res.data
-                	})
-                .catch((err) => {
-
-                  console.log(err);
-
-                  return axios.get(that.lrc).then((res) => {
-                  	return res.data
-                  }).catch(err => {
-                    console.log(err);
-                    reject()
-                  })
-                }).then(lyric=>{
-
-                  	resolve(lyric)
-                  })
-
-              }
-            })
-          }, function(err) {
-
-            console.error('error getting file! ');
-            console.log(err)
-            reject(err)
-
-          })
-        }, function(err) {
-          console.error('error getting persistent fs! ' + err);
-          reject(err)
-
-        })
-
-      }).catch(err => {
-        console.log(err)
-        return err
-      })
-      .then((err) => {
-        //console.log(err);
-        //console.log(that.lrc);
-        return axios.get(that.lrc).then((res) => {
-          that.lyric = res.data.split(/\n/).map(x=>  x.match(/^\[\d+/)?x.replace(/([a-z]+)/gi,"<span>$1</span>"):x).join('\n')
-
-          return that.lyric
-        })
-      })
+  	return downloadAudio(this,onProgress)
 
   }
-  }
 
+}
 
-
-function localOrRemote(id,url,type){
+function localOrRemote(id,type,	...urls){
 
 	let base=host+'/api/articles/'+id
+	let url=''
+	for(let i in urls){
+		if(urls[i]){
+			url=urls[i]
+			break
+		}
+	}
+
+	if(device.platform=='browser'&&url.indexOf('http')==0&&url.indexOf(host)===-1){
+			url=host+'/api/url?url='+url
+	}
+
 	let realUrl= !url?`${base}/${type}`:url
 
 	return realUrl
@@ -449,11 +527,12 @@ export function createArticle(row) {
 	console.log(row);
   return new Article({
 	id:row.ID,
+    orgSite:row.ORG_SITE,
     title: row.TITLE,
-    url: localOrRemote(row.ID,row.AUDIO_URL,'audio'),
-    lrc: localOrRemote(row.ID,row.CONTENT_URL,'content'),
-    picUrl: localOrRemote(row.ID,row.IMG_URL,'img'),
-    total:row.AUDIO_SIZE,
+    url: localOrRemote(row.ID,'audio',row.AUDIO_URL),
+    lrc: localOrRemote(row.ID,'referer',row.CONTENT_URL,row.REFERER),
+    picUrl: localOrRemote(row.ID,'img',row.IMG_URL),
+    total:row.AUDIO_BYTES,
     downloaded:row.AUDIO_LOADED,
     postDate:row.POST_DATE,
   })

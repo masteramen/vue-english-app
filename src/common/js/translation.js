@@ -192,9 +192,9 @@ function translateWithAudio(text){
 exports.translate = translate
 exports.audio = audio
 
-translateWithAudio('hello').then(result=>{
+/*translateWithAudio('hello').then(result=>{
     console.log(result.zh_CN);
     console.log(result.audio);
-})
+})*/
 exports.translateWithAudio=translateWithAudio
 

@@ -11,21 +11,22 @@ class Player {
 	  if(this.my_media)this.my_media.seekTo(position*1000)
 	  return this
   }
-  play(newSong) {
-  		console.log('play:'+newSong)
-  		if(!this.song)this.song=newSong
-  		else if(newSong&&newSong.id!=this.song.id){
-  			this.song=newSong
+  play(newAudioUrl,position) {
+
+  		if(newAudioUrl&&this.audioUrl!==newAudioUrl){
+  			this.audioUrl = newAudioUrl
+
   		}else if(this.my_media){
   			this.my_media.play()
   			return
   		}
-  		if(!this.song||!this.song.url)return
-		console.log('play '+this.song.url)
-		
-	  	if(this.song.url){
 
-	  		let url= this.song.url
+	console.log('play:'+this.audioUrl)
+	
+	  	if(this.audioUrl){
+
+///
+	  		let url= this.audioUrl
 			
 			if(this.my_media){
 				if(this.status!=Media.MEDIA_STOPPED){
@@ -78,9 +79,12 @@ class Player {
 
 		  
 		  //this.my_media.play({ playAudioWhenScreenIsLocked : true })
+		  if(position){
+		  	this.seekTo(position);
+		  }
 		  this.my_media.play()
 
-		  this.audio.dispatchEvent(new Event('canplay'))
+		 // this.audio.dispatchEvent(new Event('canplay'))
 			  if(this.timer)clearInterval(this.timer)
 			   
 		      this.timer = setInterval( () =>{

@@ -1,6 +1,6 @@
 <template>
   <div class="player" >
-    <transition name="normal"
+    <transition name="slide"
                 @enter="enter"
                 @after-enter="afterEnter"
                 @leave="leave"
@@ -28,11 +28,15 @@
         <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines">
           <div class="lyric-wrapper">
             <div v-if="currentLyric">
+              <p class="cover"><img :src="currentSong.picUrl"/></p>
               <p ref="lyricLine"
                  class="text"
                  :class="{'current': currentLineNum ===index}"
                  v-for="(line,index) in currentLyric.lines" v-html="line.txt"></p>
             </div>
+          </div>
+          <div class="loading-container" v-show="loadingTitle">
+            <loading :title="loadingTitle"></loading>
           </div>
         </scroll>
         
@@ -138,7 +142,7 @@
   import  player from 'common/js/player'
   import {downloadArtile} from 'common/js/service'
   import * as ts from 'common/js/translation'
-
+  import Loading from 'base/loading/loading'
 
 
   const transform = prefixStyle('transform')
@@ -160,7 +164,9 @@
       audioUrl:'',
       lyricFollow:true,
       needUpdateRemoteControl:true,
-      lastSwipeTime:''
+      lastSwipeTime:'',
+      showLoading:true,
+      loadingTitle:''
     }
   },
   created() {
@@ -252,7 +258,7 @@
       return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
     },
     disableCls() {
-      return this.songReady ? '' : 'disable'
+      return '' 
     },
     lyricFollowCls(){
       return this.lyricFollow?'':'not-lyricFollow'
@@ -338,14 +344,9 @@
       this.$refs.cdWrapper.style[transform] = ''
     },
     togglePlaying() {
-      console.log('togglePlaying');
-      if (!this.songReady) {
-        return
-      }
+
       this.setPlayingState(!this.playing)
-      if (this.currentLyric) {
-        this.currentLyric.togglePlay()
-      }
+
     },
     toggleLyric(){
 
@@ -369,11 +370,7 @@
       }
     },
     next() {
-      if (!this.songReady) {
-        return
-      }
 
-      this.currentTime = 0
 
       if (this.playlist.length === 1) {
         this.loop()
@@ -385,26 +382,23 @@
         this.setCurrentIndex(index)
 
       }
-      this.songReady = false
     },
     prev() {
-      if (!this.songReady) {
-        return
-      }
-      this.currentTime = 0
+
       if (this.playlist.length === 1) {
         this.loop()
-      } else {
+      } else {kk
         let index = this.currentIndex - 1
         if (index === -1) {
           index = this.playlist.length - 1
         }
         this.setCurrentIndex(index)
       }
-      this.songReady = false
     },
     ready() {
+      console.log('ready....');
       this.songReady = true
+
 
 
     },
@@ -443,10 +437,6 @@
       let currentTime = this.duration * percent
       console.log('currentTime:' + currentTime)
       player.seekTo(currentTime)
-
-      if (!this.playing) {
-        this.togglePlaying()
-      }
       if (this.currentLyric) {
         this.currentLyric.seek(currentTime * 1000)
       }
@@ -472,37 +462,49 @@
       })
       this.setCurrentIndex(index)
     },
-    getLyric() {
-      if (this.currentLyric) {
-        this.currentLyric.stop()
+    getAudio(){
+      if(!this.songReady){
+        
+        this.loadingTitle='正在加载音频'
+
+        this.currentSong.getAudio((progressEvt)=>{
+            if(progressEvt.lengthComputable){
+              let percent=Math.round((progressEvt.loaded/progressEvt.total) *100)
+              this.loadingTitle=`正在加载音频 ${percent}%`
+            }
+      
+        }).then(audioUrl => {
+          console.log('download audioUrl Success');
+          this.songReady=true;
+          this.loadingTitle=''
+
+        })
       }
+    },
+    getLyric() {
+
       this.currentSong.getLyric()
         .then(lyric => {
-          console.log(lyric);
-          this.currentLyric = new Lyric(lyric, this.handleLyric)
-          if (this.playing) {
-            this.currentLyric.play()
+          if(this.currentLyric){
+            this.currentLyric.stop();
+            delete this.currentLyric;
+
           }
+          this.currentLyric = new Lyric(lyric, this.handleLyric)
+          console.log('lyric load success');
         })
-        .catch(() => {
-          this.currentLyric = null
-          this.playingLyric = ''
-          this.currentLineNum = 0
-        })
+
     },
     handleLyric({ lineNum, txt }) {
-
-
+      console.log(txt);
       this.$nextTick(() => {
         this.currentLineNum = lineNum
-        if (!this.$refs.lyricList.scrollToElement) return
         let curLine = this.$refs.lyricLine[lineNum]
         if(this.lyricFollow){
           if ($(curLine).offset().top < $('.middle').offset().top || $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()) {
             this.$refs.lyricList.scrollToElement(curLine, 1000)
           }
         }
-
         this.playingLyric = txt
       })
 
@@ -517,11 +519,11 @@
       if(s.type=='swiperight'){
 
         this.lastSwipeTime = new Date().getTime()
-        this.$refs.playerWrap.style[transitionDuration] = ((window.innerWidth-s.deltaX)/window.innerWidth*ransitionDurationValue/2)+'ms';
-        this.$refs.playerWrap.style['left']=(window.innerWidth+s.deltaX/s.deltaTime)+'px';
-        setTimeout(()=>{
+        //this.$refs.playerWrap.style[transitionDuration] = ((window.innerWidth-s.deltaX)/window.innerWidth*ransitionDurationValue/2)+'ms';
+        //this.$refs.playerWrap.style['left']=(window.innerWidth+s.deltaX/s.deltaTime)+'px';
+        //setTimeout(()=>{
           this.back()
-        },ransitionDurationValue);
+        //},ransitionDurationValue);
         
                
       }else if(s.type=='panend'){
@@ -704,36 +706,47 @@
       if (oldSong && newSong.id === oldSong.id) {
         return
       }
-      if (this.currentLyric) {
-        this.currentLyric.stop()
-        this.currentLyric=null
-        }
+      this.songReady=false
+      this.currentTime = 0
 
-      
-      downloadArtile(newSong,
-        evt => { console.log(evt) },
-        lrc => {
-          this.getLyric()
-        }
-      ).catch(() => {}).then(() => {
-          this.getLyric()
+      player.pause()
+      if(this.currentLyric)this.currentLyric.stop()
 
-        if(this.playing){
-          //this.togglePlaying()
-          this.play()
-        }
-        this.ready()
-
-      })
+      this.getLyric()
       Bus.$emit('selected', newSong.id);
+      if(this.playing){
+        this.loadingTitle='正在加载音频'
+        this.getAudio()
+      }
+
 
     },
+    songReady(value) {
+      if (value) {
+        if(this.playing){
+          this.currentSong.getAudio().then(url=>{
+           player.play(url,this.currentTime) 
+           if(this.currentLyric)this.currentLyric.play(this.currentTime)
+          })
+        }
+      }else{
+        player.pause()
+        if(this.currentLyric)this.currentLyric.stop()
+      }
+    },
     playing(newPlaying) {
-      this.$nextTick(() => {
-        //newPlaying?this.$refs.audio.play():this.$refs.audio.pause()
-        newPlaying ? player.play(this.currentSong) : player.pause()
+        if (newPlaying) {
+          if (this.songReady) {
+            newPlaying ? player.play() : player.pause()
+            this.currentLyric.togglePlay()
+          }else{
+            this.getAudio();
+          }
+        } else {
+          player.pause();
+          if(this.currentLyric)this.currentLyric.stop();
+        }
 
-      })
     },
     fullScreen(value) {
       this.enableOrDisableScreenLock(value)
@@ -750,13 +763,14 @@
 
       })
 
-
     }
+
   },
   components: {
     ProgressBar,
     ProgressCircle,
-    Scroll
+    Scroll,
+    Loading
   }
 }
 
@@ -867,6 +881,11 @@
           width: 100%
           height: 100%
           overflow: hidden
+          .loading-container
+            position: absolute
+            width: 100%
+            top: 50%
+            transform: translateY(-50%)
           .lyric-wrapper
            
             margin: 0 20px
@@ -1013,4 +1032,12 @@
       transform: rotate(0)
     100%
       transform: rotate(360deg)
+</style>
+
+<style scoped lang="stylus" rel="stylesheet/stylus">
+  .slide-enter-active, .slide-leave-active
+    transition: all 0.3s ease
+
+  .slide-enter, .slide-leave-to
+    transform: translate3d(100%, 0, 0)
 </style>

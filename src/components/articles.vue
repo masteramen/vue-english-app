@@ -14,11 +14,22 @@
               <span>{{index + 1}}</span>
               <span>{{song.title}}</span>
             </div>
-            <div class="progress" style="width:100%">
-                <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" :style="'width: '+(song.downloaded/song.total)*100+'%;'">
-                  </div>
+
+            <div class="summary">
+            <div style="float:left;line-height:30px;">
+            <span>{{song.orgSite}}</span> |
+            <span>{{(song.total/1024/1024).toFixed(2)}}MB</span> |
+             <span>{{song.postDate|formatDate}}</span>
+             </div>
+             <div>
+               <i class="icon-success" style="float:right;" v-if="song.total&&song.total==song.downloaded"></i>
+               <div v-else class="progress" style="width:60px;float:right;margin-top:15px;">
+                   <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" :style="'width: '+(song.downloaded/song.total)*100+'%;'">
+                   </div>
+               </div>
+             </div>
+            
             </div>
-            <div class="summary"><span>{{(song.total/1024/1024).toFixed(2)}}MB</span> | <span>{{song.postDate|formatDate}}</span></div>
           </div>
 
         </li>
@@ -45,7 +56,9 @@
   import {getLatestArticles,fetchLatest,saveFile,downloadAllArticles,downloadArtilePic,getOrUpdateConfig,saveArticles} from 'common/js/service'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
-
+  import  * as db from 'common/db'
+  db.initialize()
+  
   export default {
     mixins: [playlistMixin],
     created() {

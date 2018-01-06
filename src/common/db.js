@@ -1,5 +1,10 @@
 
+import $ from 'jquery'
+import axios from 'axios'
+
+
 let db
+
 
 function createDb(){
 
@@ -10,15 +15,17 @@ function createDb(){
 	 	let sqls=[
 	 	`CREATE TABLE IF NOT EXISTS t_article(
 	 		 		   ID INTEGER PRIMARY KEY     AUTOINCREMENT,
+	 		 		   ORG_SITE TEXT,
 	 		 		   TITLE           TEXT NOT NULL,
 	 		 		   CONTENT_URL     TEXT,
+	 		 		   REFERER     TEXT,
 	 		 		   CATEGORY        TEXT,
 	 		 		   IMG_URL        TEXT,
 	 		 		   AUDIO_URL        TEXT,
 	 		 		   VIDEO_URL        TEXT,
 	 		 		   DURATION        TEXT,
 	 		 		   STATUS        TEXT ,
-	 		 		   AUDIO_SIZE        TEXT ,
+	 		 		   AUDIO_BYTES        TEXT ,
 	 		 		   AUDIO_LOADED        TEXT ,
 	 		 		   AUTHOR        TEXT ,
 	 		 		   POST_DATE  NUMERIC
@@ -91,6 +98,7 @@ export function update(id,name,value){
 
 }
 
+
 export function downloaded(url){
 
 	return Promise((resolve,reject)=>{
@@ -143,14 +151,14 @@ export function  saveArticles(articles){
 
 	 db.transaction(function (tx) {
 
-			let sql=`insert into t_article(id,title,post_date,author) values(?,?,?,?)`
+			let sql=`insert into t_article(id,org_site,title,post_date,author,REFERER,AUDIO_URL,IMG_URL,AUDIO_BYTES) values(?,?,?,?,?,?,?,?,?)`
 			//console.log(articles)
 			//console.log(articles.length)
 			for(let i=0;i<articles.length;i++){
 				let article=articles[i]
 				//console.log(article)
 
-			tx.executeSql(sql, [article.ID,article.TITLE,article.POST_DATE,article.AUTHOR], function (tx, result) {
+			tx.executeSql(sql, [article.ID,article.ORG_SITE,article.TITLE,article.POST_DATE,article.AUTHOR,article.REFERER,article.AUDIO_URL,article.IMG_URL,article.AUDIO_BYTES], function (tx, result) {
 			    console.log(result);
 			}, function (tx,error) {
 			    console.log(error);
