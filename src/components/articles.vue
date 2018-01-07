@@ -7,7 +7,7 @@
       <ul>
         <li @click="selectItem(song,index)" class="item" :class="{selected:song.id===selected}" v-for="(song,index) in songs">
           <div class="icon">
-            <img width="100" height="100"  v-lazy="song.picUrl" @load="loadPicUrl(song)" />
+            <img width="100" height="100"  v-lazy="song.picUrl" @loaded="loadPicUrl($event,song)" />
           </div>
           <div class="songlist">
             <div class="song">
@@ -57,8 +57,9 @@
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
   import  * as db from 'common/db'
+
   db.initialize()
-  
+
   export default {
     mixins: [playlistMixin],
     created() {
@@ -102,8 +103,9 @@
       }
     },
     methods: {
-      loadPicUrl(item){
-          downloadArtilePic(item)
+      loadPicUrl(event,item){
+              console.log('download item = '+item.picUrl);
+              downloadArtilePic(item)     
       },  
       onScroll(pos){
          setTimeout(()=>{

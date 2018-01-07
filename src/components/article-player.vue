@@ -384,10 +384,10 @@
       }
     },
     prev() {
-
+      console.log('prev');
       if (this.playlist.length === 1) {
         this.loop()
-      } else {kk
+      } else {
         let index = this.currentIndex - 1
         if (index === -1) {
           index = this.playlist.length - 1
@@ -466,9 +466,12 @@
       if(!this.songReady){
         
         this.loadingTitle='正在加载音频'
+        let id=this.currentSong.id;
+        this.currentSong.getAudio(progressEvt=>{
 
-        this.currentSong.getAudio((progressEvt)=>{
-            if(progressEvt.lengthComputable){
+            if(this.currentSong.id!==id)return
+
+            if(progressEvt.lengthComputable){     
               let percent=Math.round((progressEvt.loaded/progressEvt.total) *100)
               this.loadingTitle=`正在加载音频 ${percent}%`
             }
@@ -482,15 +485,17 @@
       }
     },
     getLyric() {
-
+      this.loadingTitle='正在加载内容'
+      let id=this.currentSong.id
       this.currentSong.getLyric()
         .then(lyric => {
+          if(id !== this.currentSong.id)return
           if(this.currentLyric){
             this.currentLyric.stop();
             delete this.currentLyric;
-
           }
-          this.currentLyric = new Lyric(lyric, this.handleLyric)
+          this.loadingTitle=''
+          if(lyric)this.currentLyric = new Lyric(lyric, this.handleLyric)
           console.log('lyric load success');
         })
 

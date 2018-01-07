@@ -63,13 +63,7 @@ var vm=new Vue({
   router
 })
 
-function handler ({ el, src }, formCache) {
 
-  //console.log(el, src)
-  //downloadArtilePic(el.dataset.item)
-
-}
-vm.$Lazyload.$on('loaded', handler)
 //vm.$Lazyload.$off('loaded', handler)
 //vm.$Lazyload.$off('loaded')
 

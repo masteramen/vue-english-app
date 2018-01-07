@@ -241,6 +241,12 @@ function download(url,filename,onProgress,handleContent,responseType='arraybuffe
 
 function caculateLyric(html,article){
 
+	let removeTags=['head','iframe','img','script']
+	console.log(html);
+	for(let tag of removeTags){
+		html=html.replace(new RegExp(`<${tag}\b[^<]*(?:(?!<\/${tag}>)<[^<]*)*<\/${tag}>gi`,'ig'),'');
+		html = html.replace(new RegExp(`<${tag}.*?>`,'gi'),'')
+	}
 	let content=$(html).find('#content').text().split('_______________________________________________________________')
 	
 	

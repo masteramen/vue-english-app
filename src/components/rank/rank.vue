@@ -85,15 +85,15 @@
   .rank
     position: fixed
     width: 100%
-    top: 88px
+    top: 50px
     bottom: 0
     .toplist
       height: 100%
       overflow: hidden
       .item
         display: flex
-        margin: 0 20px
-        padding-top: 20px
+        margin: 0 10px
+        padding-top: 10px
         height: 100px
         &:last-child
           padding-bottom: 20px
