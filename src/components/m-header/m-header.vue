@@ -1,11 +1,12 @@
 <template>
   <div class="m-header">
-    <i class="icon-refresh" @click.stop="refresh()"></i>
+    <i class="icon-add1" @click.stop="refresh()"></i>
     <h1 class="text">News</h1>
     <router-link tag="div" class="mine" to="/user">
-      <i class="icon-download" @click.stop="triggerDownloadAll(!downloadAll)"></i>
+      <i class="icon-more" @click.stop="triggerDownloadAll(!downloadAll)"></i>
     </router-link>
   </div>
+
 </template>
 
 <script type="text/ecmascript-6">
@@ -43,7 +44,7 @@ import Bus from 'common/js/bus'
     color: $color-theme
     background: #333;
     font-size: 0
-    .icon-refresh
+    .icon-add1
       position: absolute
       left: 0
       top: 0

@@ -13,7 +13,7 @@ function vueTouch(el,type,binding){
 };
 
 //包装成指令
-['tab','swipeleft','swiperight','press','panleft','panright','panend'].forEach(action=>{
+['tab','swipeleft','swiperight','press','panleft','panright','panend','pan'].forEach(action=>{
     console.log(action);
     Vue.directive(action,{
         bind:function(el,binding){

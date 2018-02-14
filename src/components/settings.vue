@@ -28,6 +28,8 @@
         </div>
         <mt-cell title="已读文章数" :value="currentWebVersion"></mt-cell>
         <mt-cell title="已听过分钟" :value="currentWebVersion"></mt-cell>
+        <mt-cell title="定时" :value="currentWebVersion"></mt-cell>
+
         <mt-cell
           title="关于"
           to="//github.com"

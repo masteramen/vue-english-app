@@ -40,7 +40,7 @@
       this._fetchLatest()
     },
     methods: {
-      _fetchLatest(){
+      pulldownRefreshDataList(){
         let _this=this
         //setTimeout(()=>{
 
@@ -69,7 +69,7 @@
       },
       _normalizeArticle(list) {
         let ret = []
-		
+
         list.forEach((item) => {
           const articleData = item
           if (articleData.mp3) {

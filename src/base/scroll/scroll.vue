@@ -29,6 +29,7 @@
         type: Boolean,
         default: false
       },
+
       beforeScroll: {
         type: Boolean,
         default: false
@@ -53,6 +54,15 @@
           click: this.click
         })
 
+        this.scroll.on('touchEnd',(pos) => {
+          this.$emit('touchEnd',pos)
+        })
+        this.scroll.on('beforeScrollStart', () => {
+          this.$emit('beforeScroll')
+        })
+        this.scroll.on('touchStart',(pos) => {
+          this.$emit('touchStart',pos)
+        })
         if (this.listenScroll) {
           let me = this
           this.scroll.on('scroll', (pos) => {
@@ -61,10 +71,10 @@
         }
 
         if (this.pullup) {
-          this.scroll.on('scrollEnd', () => {
-            if (this.scroll.y <= (this.scroll.maxScrollY + 50)) {
-              this.$emit('scrollToEnd')
-            }
+          this.scroll.on('scrollEnd', (pos) => {
+            // if (this.scroll.y <= (this.scroll.maxScrollY + 50)) {
+              this.$emit('scrollEnd',pos)
+            // }
           })
         }
 

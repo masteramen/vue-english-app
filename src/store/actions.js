@@ -20,9 +20,14 @@ export const selectPlay = function ({commit, state}, {list, index}) {
   }
   commit(types.SET_CURRENT_INDEX, index)
   commit(types.SET_FULL_SCREEN, true)
-  //commit(types.SET_PLAYING_STATE, true)
+  // commit(types.SET_PLAYING_STATE, true)
 }
+export const selectCurIndex = function ({commit, state}, {index}) {
 
+  commit(types.SET_CURRENT_INDEX, index)
+  commit(types.SET_FULL_SCREEN, true)
+  // commit(types.SET_PLAYING_STATE, true)
+}
 export const randomPlay = function ({commit}, {list}) {
   commit(types.SET_PLAY_MODE, playMode.random)
   commit(types.SET_SEQUENCE_LIST, list)
@@ -32,7 +37,19 @@ export const randomPlay = function ({commit}, {list}) {
   commit(types.SET_FULL_SCREEN, true)
   commit(types.SET_PLAYING_STATE, true)
 }
+export const updateSong = function ({commit, state}, song) {
+  let currentIndex = state.currentIndex
+  let playlist = state.playlist.slice()
+  // 记录当前歌曲
+  // let currentSong = playlist[currentIndex]
+  // 查找当前列表中是否有待插入的歌曲并返回其索引
+  let currentSong = playlist.splice(currentIndex, 1)
 
+  let newSong = Object.assign(JSON.parse(JSON.stringify(currentSong[0])), song)
+  console.log(newSong)
+  playlist.splice(currentIndex, 0, newSong)
+  commit(types.SET_PLAYLIST, playlist)
+}
 export const insertSong = function ({commit, state}, song) {
   let playlist = state.playlist.slice()
   let sequenceList = state.sequenceList.slice()
