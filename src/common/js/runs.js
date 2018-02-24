@@ -1,8 +1,8 @@
- const run51 = require('./sites/51VOA').run
+ const run51 = require('./data-provider/voa-provider').run
 // import {run as run51} from './sites/51VOA'
 // const Queue = require('promise-queue')
 // import queue from 'common/js/promise-queue'
-import {queue,runJobs} from './db-repo'
+import {queue,runJobs} from './data-manager'
 // const queue = require('./db-repo').queue
 // var queue = new Queue(1, Infinity)
 

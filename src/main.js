@@ -10,6 +10,10 @@ cordovaScript.setAttribute('src', codovaSrc)
 document.body.appendChild(cordovaScript)
 
 document.addEventListener('deviceready', function() {
+  document.addEventListener("offline", function () {
+    window.online=false
+  }, false);
+
   require.ensure([], function(require) {
     var main = require('./vue-main')
   }, 'main')

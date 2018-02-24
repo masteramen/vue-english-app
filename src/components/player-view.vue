@@ -1,131 +1,76 @@
 <template>
-  <page title="detail" >
   <div class="player" >
-    <transition name="slide"
-                @enter="enter"
-                @after-enter="afterEnter"
-                @leave="leave"
-                @after-leave="afterLeave"
+  <div class="normal-player"   ref="playerWrap"
+  >
+    <div class="background">
+      <img width="100%" height="100%" :src="curArticle.IMG_URL">
+    </div>
+    <div class="top">
+      <div class="line" style="height: constant(safe-area-inset-top);height: env(safe-area-inset-top);"></div>
+      <div style="position: relative">
+      <div class="back" @click="back">
+        <i class="icon-back"></i>
+      </div>
+      <div class="title" ref="title">正文</div>
+      </div>
+    </div>
+    <div class="middle"
+         ref="middle"
     >
-      <div class="normal-player" v-show="fullScreen"  ref="playerWrap"
-      >
-        <div class="background">
-          <img width="100%" height="100%" :src="curArticle.IMG_URL">
+      <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true" @scrollEnd="scrollLyricEnd"   >
+        <div class="lyric-wrapper" >
+          <p class="cover"><img :src="curArticle.IMG_URL"/></p>
+          <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
+          <div v-if="currentLyric" >
+            <p ref="lyricLine"
+               class="text"
+               :class="{'current': currentLyric.curNum-1 ===index}"
+               v-for="(line,index) in currentLyric.lines" v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)"></p>
+          </div>
+          <div ref="fillScroll" ></div>
         </div>
-        <div class="top">
-          <div class="back" @click="back">
-            <i class="icon-back"></i>
-          </div>
-          <div class="title">正文</div>
+        <div class="loading-container" v-show="loadingTitle">
+          <loading :title="loadingTitle"></loading>
         </div>
-        <div class="middle"
-             ref="middle"
-        >
-          <div id="indicator" style="border:1px solid red;position: absolute;top:10px;left:0;width:20px;"></div>
-          <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true" @scrollEnd="scrollLyricEnd"   >
-            <div class="lyric-wrapper" >
-              <p class="cover"><img :src="curArticle.IMG_URL"/></p>
-              <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
-              <div v-if="currentLyric" >
-                <p ref="lyricLine"
-                   class="text"
-                   :class="{'current': currentLyric.curNum-1 ===index}"
-                   v-for="(line,index) in currentLyric.lines" v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)"></p>
-              </div>
-              <div ref="fillScroll" ></div>
-            </div>
-            <div class="loading-container" v-show="loadingTitle">
-              <loading :title="loadingTitle"></loading>
-            </div>
-          </scroll>
+      </scroll>
 
-          <div class="middle-r" ref="middleR">
-            <div class="cd-wrapper" ref="cdWrapper">
-              <div class="cd" :class="cdCls">
-                <img class="image" :src="curArticle.image">
-              </div>
-            </div>
-            <div class="playing-lyric-wrapper">
-              <div class="playing-lyric" v-html="playingLyric"></div>
-            </div>
-          </div>
-
-
+    </div>
+    <div class="bottom">
+      <div class="dot-wrapper">
+        <span class="dot" :class="{'active': currentShow==='lyric'}"></span>
+        <span class="dot" :class="{'active': currentShow==='cd'}"></span>
+      </div>
+      <div class="progress-wrapper">
+        <span class="time time-l">{{format(currentTime)}}</span>
+        <div class="progress-bar-wrapper">
+          <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
         </div>
-        <div class="bottom">
-          <div class="dot-wrapper">
-            <span class="dot" :class="{'active': currentShow==='lyric'}"></span>
-            <span class="dot" :class="{'active': currentShow==='cd'}"></span>
-          </div>
-          <div class="progress-wrapper">
-            <span class="time time-l">{{format(currentTime)}}</span>
-            <div class="progress-bar-wrapper">
-              <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
-            </div>
-            <span class="time time-r">{{curArticle.DURATION && format(curArticle.DURATION) || '未知'}}</span>
-          </div>
-          <div class="operators">
-            <div class="icon i-left" @click="changeMode">
-              <i :class="iconMode"></i>
-            </div>
-            <div class="icon i-left" :class="disableCls">
-              <i @click="prev" class="icon-prev"></i>
-            </div>
-            <div class="icon i-center" :class="disableCls">
-              <i @click="togglePlaying" :class="playIcon"></i>
-            </div>
-            <div class="icon i-right" :class="disableCls">
-              <i @click="next" class="icon-next"></i>
-            </div>
-            <div class="icon i-right" :class="lyricFollowCls">
-              <i class="icon-book" @click="toggleLyric"></i>
-            </div>
-          </div>
+        <span class="time time-r">{{curArticle.DURATION && format(curArticle.DURATION) || '未知'}}</span>
+      </div>
+      <div class="operators">
+        <div class="icon i-left" @click="changeMode">
+          <i :class="iconMode"></i>
+        </div>
+        <div class="icon i-left" :class="disableCls">
+          <i @click="prev" class="icon-prev"></i>
+        </div>
+        <div class="icon i-center" :class="disableCls">
+          <i @click="togglePlaying" :class="playIcon"></i>
+        </div>
+        <div class="icon i-right" :class="disableCls">
+          <i @click="next" class="icon-next"></i>
+        </div>
+        <div class="icon i-right" :class="lyricFollowCls">
+          <i class="icon-book" @click="toggleLyric"></i>
         </div>
       </div>
-    </transition>
-    <transition name="mini">
-      <div class="mini-player" v-show="!fullScreen" >
-
-        <router-link to="/list" class="items">
-          <span class="icon-home"></span>
-          <p class="text">新闻</p>
-        </router-link>
-        <router-link to="/select" class="items">
-          <span class="icon-book"></span>
-          <p class="text">生词</p>
-        </router-link>
-        <div class="icon itmes" @click="open">
-          <img :class="cdCls" width="40" height="40" :src="curArticle.image">
-        </div>
-        <router-link to="/subscription" class="items">
-          <span class="icon-class"></span>
-          <p class="text">订阅</p>
-        </router-link>
-        <router-link to="/settings" class="items"  ref="link">
-          <span class="icon-user"></span>
-          <p class="text">设置</p>
-        </router-link>
-
-        <div class="text" v-show="false">
-          <div class="name"  v-html="curArticle.name"></div>
-          <div class="desc"  v-html="curArticle.singer"></div>
-        </div>
-        <div class="control" v-show="false">
-          <progress-circle :radius="radius" :percent="percent">
-            <i @click.stop="togglePlaying" class="icon-mini" :class="miniIcon"></i>
-          </progress-circle>
-        </div>
-        <div class="control" v-show="false">
-          <div class="icon-playlist"></div>
-        </div>
-      </div>
-    </transition>
+    </div>
     <div ref="audio" :src="curArticle.AUDIO_URL" :title="curArticle.TITLE" @duration="onDuration" @canplay="ready" @error="error" @timeupdate="updateTime" @ended="end"></div>
     <audio ref="wordAudio" style="display:none;" ></audio>
   </div>
-  </page>
+  </div>
 </template>
+
 
 <script type="text/ecmascript-6">
   import {mapGetters, mapMutations, mapActions} from 'vuex'
@@ -140,15 +85,9 @@
   import Scroll from 'base/scroll/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle} from 'common/js/service'
+  import {getSilent, createArticle,getDict} from 'common/js/service'
   import {update} from 'common/js/data-manager'
-  import * as ts from 'common/js/translation'
   import Loading from 'base/loading/loading'
-  const transform = prefixStyle('transform')
-  const webkit = 'transform' in document.body.style ? '' : '-webkit-';
-  const transitionDuration = prefixStyle('transitionDuration')
-  const ransitionDurationValue = 200
-
   export default {
     data() {
       return {
@@ -166,18 +105,11 @@
         needUpdateRemoteControl: true,
         lastSwipeTime: '',
         showLoading: true,
-        loadingTitle: '',
-        actions: [{name: '下载',
-          method: function() {
-            alert('ok')
-          }}],
-        popupVisible: true
+        loadingTitle: ''
       }
     },
     created() {
       this.touch = {}
-      console.log('testabc')
-      console.log(this)
     },
     mounted() {
       getSilent()
@@ -237,6 +169,7 @@
               break
             case 'pause':
             case 'play':
+            case 'playpause':
               console.log('togglePlaying')
               _this.togglePlaying()
               break
@@ -248,10 +181,9 @@
         $('.lyric-wrapper').on('click', 'span', function() {
           $(this).toggleClass('mark')
           if ($(this).hasClass('mark')) {
-            console.log('translateWithAudio')
-            ts.translateWithAudio($(this).text().trim()).then(result => {
+            getDict($(this).text().trim()).then(result=>{
               let html = $(this).html()
-              $(this).html(`${html}<b>(${result.zh_CN})</b>`)
+              $(this).html(`${html}<b>(${result.result})</b>`)
 
               that.$refs.wordAudio.src = result.audio
               let playing = that.playing
@@ -266,6 +198,7 @@
               }
               that.$refs.wordAudio.play()
             })
+
           } else {
             $(this).find('b').remove()
           }
@@ -325,7 +258,9 @@
         let curLine = this.$refs.lyricLine[lineNum]
 
         if (this.lyricFollow) {
-          if ($(curLine).offset().top < $('.middle').offset().top || $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()) {
+          if ($(curLine).offset().top < $('.middle').offset().top ||
+            $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()
+          ) {
             this.$refs.lyricList.scrollToElement(curLine, 1000)
           }
         }
@@ -335,7 +270,7 @@
       },
       back() {
         this.setFullScreen(false)
-
+        this.$router.back()
       },
       open() {
         this.setFullScreen(true)
@@ -348,46 +283,6 @@
           console.log('keep allowSleepAgain')
           window.plugins.insomnia.allowSleepAgain()
         }
-      },
-      enter(el, done) {
-        const { x, y, scale } = this._getPosAndScale()
-
-        let animation = {
-          0: {
-            transform: `translate3d(${x}px,${y}px,0) scale(${scale})`
-          },
-          60: {
-            transform: `translate3d(0,0,0) scale(1.1)`
-          },
-          100: {
-            transform: `translate3d(0,0,0) scale(1)`
-          }
-        }
-
-        animations.registerAnimation({
-          name: 'move',
-          animation,
-          presets: {
-            duration: 400,
-            easing: 'linear'
-          }
-        })
-
-        animations.runAnimation(this.$refs.cdWrapper, 'move', done)
-      },
-      afterEnter() {
-        animations.unregisterAnimation('move')
-        this.$refs.cdWrapper.style.animation = ''
-      },
-      leave(el, done) {
-        this.$refs.cdWrapper.style.transition = 'all 0.4s'
-        const { x, y, scale } = this._getPosAndScale()
-        this.$refs.cdWrapper.style[transform] = `translate3d(${x}px,${y}px,0) scale(${scale})`
-        this.$refs.cdWrapper.addEventListener('transitionend', done)
-      },
-      afterLeave() {
-        this.$refs.cdWrapper.style.transition = ''
-        this.$refs.cdWrapper.style[transform] = ''
       },
       togglePlaying() {
         this.setPlayingState(!this.playing)
@@ -478,11 +373,20 @@
         }
       },
       playTime(interval) {
-        // player.seekTo(interval / 1000)
-        player.play(this.curArticle.AUDIO_URL, interval / 1000)
-        if (this.currentLyric) {
-          this.currentLyric.seek(interval)
+        console.log(new Date())
+        if(this.clickTimer) {
+          player.seekTo(interval / 1000)
+          // player.play(this.curArticle.AUDIO_URL, interval / 1000)
+          if (this.currentLyric) {
+            this.currentLyric.seek(interval)
+          }
         }
+        else this.clickTimer = setTimeout(() => {
+          clearTimeout(this.clickTimer)
+          this.clickTimer = false
+
+        }, 400);
+
       },
       changeMode() {
         const mode = (this.mode + 1) % 3
@@ -520,7 +424,16 @@
             this.loadingTitle = ''
           }).catch(err => {
             console.log(err)
-            this.error()
+            if(err&&err.desc){
+              this.loadingTitle = `加载音频发生错误 :${err.desc}`
+            }
+            if(!err || err.code!=0){
+              setTimeout(_=>{
+                this.error()
+              },3000)
+
+            }
+
           })
         }
       },
@@ -552,148 +465,6 @@
           }
           if (txt) this.playingLyric = txt
         })
-      },
-      swiper(s, e) {
-        this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
-        // this.$refs.playerWrap.style['left']=s.deltaX+'px'
-        let playWrapLeft = 0
-
-        if (s.type == 'swiperight') {
-          this.lastSwipeTime = new Date().getTime()
-          // this.$refs.playerWrap.style[transitionDuration] = ((window.innerWidth-s.deltaX)/window.innerWidth*ransitionDurationValue/2)+'ms';
-          // this.$refs.playerWrap.style['left']=(window.innerWidth+s.deltaX/s.deltaTime)+'px';
-          // setTimeout(()=>{
-          this.back()
-          // },ransitionDurationValue);
-        } else if (s.type == 'panend') {
-          // fixed swipe event before panend event
-          if (new Date().getTime() - this.lastSwipeTime < ransitionDurationValue) {
-            return
-          }
-          if (s.deltaX > window.innerWidth / 3) {
-            this.back()
-          } else {
-            this.$refs.playerWrap.style[transitionDuration] = s.deltaX / window.innerWidth * ransitionDurationValue + 'ms'
-            this.$refs.playerWrap.style['left'] = '0px'
-          }
-        } else if ((s.type == 'panright' || s.type == 'panleft') && Math.abs(s.deltaX) > Math.abs(s.deltaY)) {
-          console.log(s.deltaTime)
-          this.$refs.playerWrap.style[transitionDuration] = `0ms`
-
-          this.$refs.playerWrap.style['left'] = (s.deltaX + s.deltaX / s.deltaTime) + 'px'
-        }
-      },
-      playWrapTouchStart(e) {
-        this.middleTouchStart(e)
-      },
-      playWrapTouchMove(e) {
-        this.middleTouchMove(e)
-      },
-      playWrapTouchEnd(e) {
-        this.middleTouchEnd(e)
-      },
-      middleTouchStart(e) {
-        this.touch.initiated = true
-        const touch = e.touches[0]
-        this.touch.startX = touch.pageX
-        this.touch.startY = touch.pageY
-        this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
-        alert('ok')
-      },
-      middleTouchMove2(e) {
-        /*
-        if (!this.touch.initiated) {
-          return
-        }
-        const touch = e.touches[0]
-        const deltaX = touch.pageX - this.touch.startX
-        const deltaY = touch.pageY - this.touch.startY
-        if (Math.abs(deltaY) > Math.abs(deltaX)) {
-          return
-        }
-        const left = this.currentShow === 'lyric' ? 0 : -window.innerWidth
-
-        if(this.currentShow === 'lyric' && deltaX >0 ){
-          this.$refs.playerWrap.style['left']=deltaX+'px'
-          //this.$refs.middle.style['left']=deltaX+'px'
-          return
-        }
-
-        const offsetWidth = Math.min(0, Math.max(-window.innerWidth, left + deltaX))
-        this.touch.percent = Math.abs(offsetWidth / window.innerWidth)
-
-        requestAnimationFrame(()=>{
-          this.$refs.middleR.style[transform] = `translate3d(${offsetWidth}px,0,0)`
-          this.$refs.middleR.style[transitionDuration] = 0
-
-          this.$refs.lyricList.$el.style['opacity'] = 1 - this.touch.percent
-          this.$refs.lyricList.$el.style[transitionDuration] = 0
-        })
-  */
-      },
-      middleTouchEnd2(e) {
-        /*
-        let offsetWidth
-        let opacity
-        console.log(this.$refs.playerWrap.style.left);
-        let playWrapLeft=parseInt(this.$refs.playerWrap.style.left);
-        if(playWrapLeft>0){
-
-          if(playWrapLeft>window.innerWidth/3){
-              playWrapLeft=window.innerWidth
-
-          }else{
-            playWrapLeft=0
-          }
-
-          this.$refs.playerWrap.style[transitionDuration] = `500ms`
-          this.$refs.playerWrap.style['left']=playWrapLeft+'px'
-          //this.$refs.middle.style['left']=playWrapLeft+'px'
-          setTimeout(()=>{
-            if(parseInt(this.$refs.playerWrap.style.left)>0){
-              this.setFullScreen(false)
-            }
-            this.$refs.playerWrap.style[transitionDuration] = `0ms`
-
-          },100)
-
-          e.preventDefault();
-          return
-        }
-        if (this.touch.percent > 0.3) {
-
-          if (this.currentShow === 'cd') {
-
-            this.currentShow = 'lyric'
-
-          }else{
-            this.currentShow = 'cd'
-          }
-
-        }
-
-        if(this.currentShow=='lyric'){
-          offsetWidth = 0
-          opacity = 1
-        }else if(this.currentShow=='cd'){
-          offsetWidth = -window.innerWidth
-          opacity = 0
-        }
-
-        console.log(`${this.currentShow} ${this.touch.percent}  ${offsetWidth}`);
-
-        this.touch.percent=0
-        const time = 300
-        this.$nextTick(() => {
-          this.$refs.middleR.style[transform] = `translate3d(${offsetWidth}px,0,0)`
-          this.$refs.middleR.style[transitionDuration] = `${time}ms`
-          this.$refs.lyricList.$el.style.opacity = opacity
-          this.$refs.lyricList.$el.style[transitionDuration] = `${time}ms`
-
-        })
-
-        this.touch.initiated = false
-        */
       },
       _fullZero(num, n = 2) {
         let len = num.toString().length
@@ -786,16 +557,27 @@
       },
       fullScreen(value) {
         this.enableOrDisableScreenLock(value)
-        this.$refs.playerWrap.style[transitionDuration] = ransitionDurationValue + 'ms'
-        this.$refs.playerWrap.style['left'] = window.innerWidth + 'px'
-        let left = 0
-        if (!value) {
-          left = window.innerWidth
+        //if(AdMob) AdMob.showInterstitial();
+        if(AdMob){
+
+           AdMob.showRewardVideoAd()
+          if(value){
+            this.$nextTick(() => {
+              AdMob.createBanner({
+                adId: 'ca-app-pub-3940256099942544/6300978111',
+                position:AdMob.AD_POSITION.POS_XY,
+                x:0,
+                y:$(this.$refs.title).offset().top,
+                autoShow: true
+              })
+             // showBannerAtXY(0, $(this.$refs.title).offset().top);
+            })
+          }else{
+            AdMob.removeBanner();
+          }
         }
 
-        requestAnimationFrame(() => {
-          this.$refs.playerWrap.style['left'] = left + 'px'
-        })
+
       }
 
     },
@@ -838,11 +620,11 @@
         filter: blur(20px)
       .top
         position: relative
-        margin-bottom: 25px
+        background: $color-background
+        z-index: 100
         .back
           position absolute
           top: 0
-          left: 6px
           z-index: 50
           .icon-back
             display: block
@@ -867,7 +649,7 @@
         position: absolute
         width: 100%
         top: 50px
-        bottom: 160px
+        bottom: 130px
         white-space: nowrap
         font-size: 0
         .middle-r
@@ -942,7 +724,7 @@
 
       .bottom
         position: absolute
-        bottom: 50px
+        bottom: 20px
         width: 100%
         .dot-wrapper
           text-align: center

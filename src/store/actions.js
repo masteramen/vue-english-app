@@ -24,6 +24,7 @@ export const selectPlay = function ({commit, state}, {list, index}) {
 }
 export const selectCurIndex = function ({commit, state}, {index}) {
 
+  console.log(index)
   commit(types.SET_CURRENT_INDEX, index)
   commit(types.SET_FULL_SCREEN, true)
   // commit(types.SET_PLAYING_STATE, true)

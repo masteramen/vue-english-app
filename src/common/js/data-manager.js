@@ -5,10 +5,10 @@ var queue = new Queue(1, Infinity)
 const axios = require('axios')
 const dbDDL = require('./db-ddl')
 
-const db = require('./db')
+const db = require('./env-api')
 
 db.run(dbDDL.ddl)
-
+db.run(dbDDL.dictDDL)
 function update(detail) {
   console.log('update....')
   db.run('UPDATE T_ARTICLE SET TITLE=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
@@ -174,5 +174,37 @@ function getDetail(detailObj) {
 function addConfig(config) {
   jobConfigs.push(config)
 }
-module.exports = {getArticlesBasicInfo, findById, getList, queue, getDetail, addConfig, runJobs,update}
+function getDict(text) {
+
+  return new Promise((resolve, reject) => {
+    db.all(`select * from t_dict where QTEXT ='${text}'`, function(err, all) {
+      if (err)console.log(err)
+      resolve(all)
+    })
+  })
+}
+
+function getDictList() {
+
+  return new Promise((resolve, reject) => {
+    db.all(`select * from t_dict`, function(err, all) {
+      if (err)console.log(err)
+      resolve(all)
+    })
+  })
+}
+
+function saveDict({qtext,result,detail}) {
+
+  db.run('INSERT INTO T_dict (qtext,result,detail) VALUES(?,?,?)',qtext,result,detail
+    , err => {
+      console.log(err)
+      if (err) {
+        reject()
+      } else {
+
+      }
+    })
+}
+module.exports = {getArticlesBasicInfo, findById, getList, queue, getDetail, addConfig, runJobs,update,getDict,saveDict,getDictList}
 

@@ -1,87 +1,126 @@
 <template>
-  <div class="setting" v-show="fullScreen">
-        <div class="background"></div>
-        <div class="top">
-            <div class="back" @click="back">
-              <router-link to="/articles">
-              <i class="icon-back"></i>
-              </router-link>
-
-            </div>
-            <div class="title">设置</div>
-        </div>
-        <div class="listCon">
-        <scroll  class="toplist" ref="settinglist" >
-        <ul>
-
-        <mt-cell
-          title="保留文章数上限"
-          label="超出上限后自动删除旧的文章"
-          to="//github.com"
-          is-link
-          value="100">
-        </mt-cell>
-        <mt-cell title="占用空间大小"></mt-cell>
-        <mt-cell title="已使用存储"><mt-switch v-model="value"></mt-switch></mt-cell>
-        <div @click="clickVersion">
-        <mt-cell title="版本" :value="currentWebVersion" >{{clickVersionCount}}</mt-cell>
-        </div>
-        <mt-cell title="已读文章数" :value="currentWebVersion"></mt-cell>
-        <mt-cell title="已听过分钟" :value="currentWebVersion"></mt-cell>
-        <mt-cell title="定时" :value="currentWebVersion"></mt-cell>
-
-        <mt-cell
-          title="关于"
-          to="//github.com"
-          is-link
-          value="带链接">
-        </mt-cell>
-
+  <page title="设置" class="setting" >
+    <div class="listCon">
+      <scroll  class="toplist" ref="settinglist" >
+        <ul tyle="height:100%;">
+          <mt-checklist
+            style="margin-left:-16px"
+            align="right"
+            v-model="config.checklistValues"
+            :options="checklistOptions">
+          </mt-checklist>
+          <div  v-on:click="clickNDays">
+          <mt-cell
+            title="删除旧文章"
+            label="自动删除几天前旧的文章" is-link>
+            {{config.nDay}}天
+          </mt-cell>
+          </div>
+          <mt-cell title="占用空间大小"></mt-cell>
+          <mt-cell title="软件版本" :value="1.0" ></mt-cell>
+          <mt-cell
+            title="关于本软件"
+            to="//github.com"
+            is-link>
+          </mt-cell>
         </ul>
-        </scroll>
-       </div>
-
-</div>
-
+      </scroll>
+      <mt-actionsheet
+        :actions="dayActions"
+        v-model="nDaySheetVisible">
+      </mt-actionsheet>
+      <mt-popup
+        v-model="popupVisible"
+        popup-transition="popup-fade">
+        <mt-radio
+          title="请选择天数"
+          v-model="config.nDay"
+          :options="nDayOptions">
+        </mt-radio>
+      </mt-popup>
+    </div>
+  </page>
 </template>
 
 <script type="text/ecmascript-6">
-  import Bus from 'common/js/bus'
   import Scroll from 'base/scroll2/scroll/scroll'
-  const vConsole = require( 'vconsole')
+  import {configProvider} from 'common/js/service'
 
   export default {
     created() {
 
     },
     mounted() {
-      chcp.getVersionInfo((err, data) => {
+      function checkConnection() {
+        var networkState = navigator.connection.type;
 
-        console.log('Current web version: ' + data.currentWebVersion);
-        console.log('Previous web version: ' + data.previousWebVersion);
-        console.log('Loaded and ready for installation web version: ' + data.readyToInstallWebVersion);
-        console.log('Application version name: ' + data.appVersion);
-        console.log('Application build version: ' + data.buildVersion);
-        this.currentWebVersion=data.currentWebVersion
+        var states = {};
+        states[Connection.UNKNOWN]  = 'Unknown connection';
+        states[Connection.ETHERNET] = 'Ethernet connection';
+        states[Connection.WIFI]     = 'WiFi connection';
+        states[Connection.CELL_2G]  = 'Cell 2G connection';
+        states[Connection.CELL_3G]  = 'Cell 3G connection';
+        states[Connection.CELL_4G]  = 'Cell 4G connection';
+        states[Connection.CELL]     = 'Cell generic connection';
+        states[Connection.NONE]     = 'No network connection';
 
-      });
+
+      }
+
+      checkConnection();
 
     },
-
-
     data() {
       return {
-          fullScreen:true,
-          currentWebVersion:'',
-          clickVersionCount:0
-        }
-      
+        config:configProvider.getConfig(),
+        checklistOptions:[
+          {
+            label:'手机网络下载音频',
+            value:'download-cell-net-work'
+          },
+          {
+            label:'显示生词翻译',
+            value:'disp-new-word-ts'
+          },
+          {
+            label:'显示段落译文',
+            value:'disp-p-ts'
+          }],
+        nDayOptions:[
+          {
+            label:'2天',
+            value:'2'
+          },
+          {
+            label:'3天',
+            value:'3'
+          },
+          {
+            label:'4天',
+            value:'4'
+          },
+          {
+            label:'5天',
+            value:'5'
+          }],
+
+        settingList:['voa','bbc'],
+        nDaySheetVisible:false,
+        dayActions:[{name:"2"},{name:"3"},{name:"4"},{name:"5"}],
+        popupVisible:false
+      }
+
     },
     filters:{
 
-      
+
     },
     methods: {
+      clickNDays(){
+
+        this.popupVisible=!this.popupVisible
+
+      },
       back() {
         this.show=false
       },
@@ -96,7 +135,13 @@
 
     },
     watch: {
-      
+      config:{
+        handler(val, oldVal){
+          console.log(val)
+          configProvider.save(this.config)
+        },
+        deep:true
+      }
 
     },
     components: {
@@ -105,17 +150,16 @@
   }
 </script>
 
-<style scoped lang="stylus" rel="stylesheet/stylus">
+<style  lang="stylus" rel="stylesheet/stylus">
   @import "~common/stylus/variable"
   @import "~common/stylus/mixin"
   .setting
-    position: fixed
-    left: 0
-    right: 0
-    top: 0
-    bottom: 0
-    z-index: 150
     background: $color-background
+    z-index 10000!important
+    .mint-checklist
+      .mint-cell
+        text-align: left
+
     .mint-cell
       background: $color-background
     .top
@@ -139,11 +183,8 @@
         no-wrap()
         font-size: $font-size-large
         color: $color-text
-   .setting
-    position: fixed
+  .setting
     width: 100%
-    top: 0px
-    bottom: 0
     .listCon
       position: fixed;
       width: 100%;
@@ -177,5 +218,5 @@
           font-size: $font-size-small
           .song
             no-wrap()
-            line-height: 26px       
+            line-height: 26px
 </style>

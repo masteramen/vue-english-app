@@ -16,4 +16,13 @@ CREATE TABLE IF NOT EXISTS t_article(
    POST_DATE  TEXT
 )
 `
+const dictDDL = `
+CREATE TABLE IF NOT EXISTS T_DICT(
+   ID INTEGER PRIMARY KEY     AUTOINCREMENT,
+   QTEXT           TEXT UNIQUE NOT NULL,
+   RESULT         TEXT,
+   DETAIL     TEXT
+)
+`
 module.exports.ddl = ddl
+module.exports.dictDDL = dictDDL

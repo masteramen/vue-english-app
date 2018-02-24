@@ -1,8 +1,8 @@
 <template>
   <div ref="wrapper" class="list-wrapper">
-    <div class="scroll-content">
-      <slot>
-        <ul ref="list" class="list-content">
+    <div class="scroll-content" ref="list">
+      <slot >
+        <ul  class="list-content">
           <li @click="clickItem($event,item)" class="list-item" v-for="item in data">{{item}}</li>
         </ul>
       </slot>
@@ -36,7 +36,6 @@
 <script type="text/ecmascript-6">
   import BScroll from 'better-scroll'
   import { getRect } from './dom'
-
   const COMPONENT_NAME = 'scroll'
   const DIRECTION_H = 'horizontal'
   const DIRECTION_V = 'vertical'
@@ -89,7 +88,7 @@
       refreshDelay: {
         type: Number,
         default: 500
-      }, 
+      },
       freeScroll: {
         type: Boolean,
         default: false
@@ -122,9 +121,10 @@
       this.pullDownInitTop = -20
     },
     mounted() {
-      setTimeout(() => {
+      this.$nextTick(() => {
         this.initScroll()
-      }, 20)
+      })
+
     },
     methods: {
       initScroll() {
@@ -134,7 +134,6 @@
         if (this.$refs.list && (this.pullDownConfig || this.pullUpLoad)) {
           this.$refs.list.style.minHeight = `${getRect(this.$refs.wrapper).height + 1}px`
         }
-
         let options = {
           probeType: this.probeType,
           click: this.click,

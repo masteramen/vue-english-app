@@ -1,5 +1,5 @@
 const $ = require('cheerio')
-const db = require('../db-repo')
+const db = require('../data-manager')
 const url = require('url')
 
 db.addConfig(

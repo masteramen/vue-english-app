@@ -81,7 +81,7 @@ function getTk(text) {
 
         var match;
         match = text.match(/TKK=eval\('\(\(function\(\){(.*?)}\)\(\)\)'\);/);
-        // for mobile 
+        // for mobile
         match = match|| text.match(/tkk:'\(\(function\(\){(.*?)}\)\(\)\)/);
         if (match) {
           // 函数体不接收 ASCII 码，所以这里要手动转换一遍
@@ -137,7 +137,7 @@ const translate = function(text) {
     })
 
 
-} 
+}
 
 function audio(text) {
     return getTk(text).then(tk => {
@@ -167,34 +167,49 @@ function translateWithAudio(text){
             }, {})
 
             let dt = ['at', 'bd', 'ex', 'ld', 'md', 'qca', 'rw', 'rm', 'ss', 't'].map(x => 'dt=' + x).join('&')
-            console.log(data);
-            return axios.get('https://translate.google.cn/translate_a/single?' + dt, {
-              params: data,
+            //console.log(data);
+            let query='';for(let k in data)query+=k+'='+encodeURIComponent(data[k])+'&';
+            return axios.get('https://translate.google.cn/translate_a/single?' + query+dt, {
+             // params: data,
               headers: headers,
             }).
             then(res => {
-              console.log(res.data);
+              //console.log(res.data);
+
+              //console.log(dict)
               let ret={
-                'zh_CN':res.data[0][0][0],
-                'data':res.data,
+                text:text,
+               // 'zh_CN':res.data[0][0][0],
+
+                //'data':res.data,
                 'audio':"https://translate.google.cn/translate_tts?ie=UTF-8&q=" + encodeURIComponent(text) + "&tl=en&total=1&idx=0&textlen=" + text.length + "&tk=" + tk + "&client=t"
                 }
-
+              try {
+                let dict = res.data[1].map((arr) => {
+                  return arr[0] + '：' + arr[1].join('，')
+                })
+                ret.dict = dict
+              }catch (e){}
+              try {
+                ret.result = res.data[0]
+                  .map((arr) => arr[0])
+                  .filter((x) => x)
+                  .map((x) => x.trim())
+              } catch (e) {}
               return reslove(ret)
             })
 
         })
-
-
       })
 }
 
 exports.translate = translate
 exports.audio = audio
 
-/*translateWithAudio('hello').then(result=>{
+translateWithAudio('hero').then(result=>{
+  console.log(result)
     console.log(result.zh_CN);
     console.log(result.audio);
-})*/
+})
 exports.translateWithAudio=translateWithAudio
 

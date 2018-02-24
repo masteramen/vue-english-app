@@ -1,43 +1,42 @@
 <template>
-  <div class="articles" ref="articles">
+  <page title="home" :no-back="true">
+    <m-header slot="navbar"  :data="songs"></m-header>
+    <div class="articles" ref="articles">
 
-    <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
-      <div>
-        <div ref="topbar" style="margin-top:-40px;text-align:center;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
-      <ul>
-        <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
-          <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
-          <div class="songlist">
-            <div class="song">
-              <span>{{song.ID}}</span>
-              <span>{{song.TITLE}}</span>
-            </div>
+      <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
+        <div>
+          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
+          <ul>
+            <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
+              <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
+              <div class="songlist">
+                <div class="song">
+                  <span>{{song.TITLE}}</span>
+                </div>
 
-            <div class="summary">
-            <div style="float:left;line-height:30px;">
-            <span>{{song.ORG_SITE}}</span> |
-            <span>{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}}</span> |
-             <span>{{song.POST_DATE|formatDate}}</span> |
-              <span>{{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
-             </div>
-             <div>
-               <i class="icon-success" style="float:right;" v-if="song.TOTAL"></i>
-             </div>
+                <div class="summary">
+                  <div class="summaryWrap">
+                    <span>{{song.ORG_SITE}}</span> |
+                    <span>{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}}</span> |
+                    <span>{{song.POST_DATE|formatDate}}</span> |
+                    <span>{{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
+                    <i class="icon-success" style="float:right;" v-if="song.TOTAL"></i>
+                  </div>
+                </div>
+              </div>
+              <div class="icon">
+                <img  :id="song.ID"  v-lazy="song.IMG_URL" @loaded="loadPicUrl($event,song)" />
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="loading-container" v-show="!songs.length">
+          <loading></loading>
+        </div>
+      </scroll>
 
-            </div>
-          </div>
-          <div class="icon">
-            <img width="100" height="100" :id="song.ID"  v-lazy="song.IMG_URL" @loaded="loadPicUrl($event,song)" />
-          </div>
-        </li>
-      </ul>
-      </div>
-      <div class="loading-container" v-show="!songs.length">
-        <loading></loading>
-      </div>
-    </scroll>
-    <router-view></router-view>
-  </div>
+    </div>
+  </page>
 </template>
 
 <script type="text/ecmascript-6">
@@ -49,31 +48,29 @@
   import {createArticle} from 'common/js/service'
   import {formatDate} from 'common/js/formatDate'
   import Bus from 'common/js/bus'
-
+  import MHeader from 'components/m-header/m-header'
   import {getLatestArticles, fetchLatest, saveFile, downloadAllArticles, downloadArtilePic, getOrUpdateConfig, saveArticles} from 'common/js/service'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
-  import * as db from 'common/db'
-
-  // db.initialize()
-
   export default {
     mixins: [playlistMixin],
     created() {
-      // this._getTopList()
       this._getLatestArticles()
       this.pulldownRefreshDataList()
     },
     mounted() {
-      Bus.$on('selected', selected => {
-        this.selected = selected
-      })
       Bus.$on('refresh', selected => {
         this.$nextTick(() => {
           this.$refs.toplist.scrollTo(0, this.pullDownConfig.threshold)
           this.$refs.toplist.$emit('scroll', {'x': 0, 'y': this.pullDownConfig.threshold})
           this.$refs.toplist.$emit('pullingDown', true)
         })
+      })
+      Bus.$on('downloadAll', _ => {
+        setTimeout(_=>{
+          downloadAllArticles(this.songs)
+        },0)
+
       })
     },
     data() {
@@ -119,12 +116,12 @@
           this.pullDownTip = '正在刷新'
           this.pulldownRefreshDataList()
         } else this.isPullingDown = false
-          // this.$refs.toplist.forceUpdate()
+        // this.$refs.toplist.forceUpdate()
       },
       pulldownRefreshDataList() {
         fetchLatest()
           .then(contents => {
-          // return contents.length
+            // return contents.length
             console.log('resolve2 ....')
             return this._getLatestArticles()
           })/*
@@ -135,12 +132,12 @@
               this._getLatestArticles()
             }
           }) */.then(() => {
-            this.$refs.toplist.forceUpdate(true)
+          this.$refs.toplist.forceUpdate(true)
+        })
+          .catch(err => {
+            console.log('error')
+            console.log(err)
           })
-            .catch(err => {
-              console.log('error')
-              console.log(err)
-            })
       },
 
       _getLatestArticles() {
@@ -167,23 +164,30 @@
       handlePlaylist(playlist) {
         const bottom = '60px'
 
-        this.$refs.articles.style.bottom = bottom
-        this.$refs.toplist.refresh()
+        // this.$refs.articles.style.bottom = bottom
+        // this.$refs.toplist.refresh()
       },
       ...mapGetters([
         'currentSong'
       ]),
       selectItem(item, index) {
-      /* this.$router.push({
-          path: `/article/${item.id}`
-        })
-        this.setTopList(item) */
-       // this.selected = item.id
-       // this.setFilterType(0)
-        this.selectCurIndex({
+        /* this.$router.push({
+            path: `/article/${item.id}`
+          })
+          this.setTopList(item) */
+        // this.selected = item.id
+        // this.setFilterType(0)
+        /* this.selectCurIndex({
           list: this.songs,
           index
+        }) */
+
+        this.selectCurIndex({index});
+
+         this.$router.push({
+          path: `/detail`
         })
+        console.log(index)
       },
       ...mapMutations({
         setFilterType: 'SET_FILTER_TYPE',
@@ -197,30 +201,24 @@
       ])
     },
     computed: {
-      ...mapGetters(['downloadAll', 'currentIndex']),
+      ...mapGetters([ 'currentIndex']),
       mSongs() {
         return this.songs
       }
 
     },
     watch: {
-
       songs() {
         setTimeout(() => {
           this.$Lazyload.lazyLoadHandler()
         }, 20)
-      },
-      downloadAll(newDownloadAll) {
-        this.$nextTick(() => {
-          console.log('download All')
-          downloadAllArticles(this.songs)
-        })
       }
     },
     components: {
       Scroll,
       ProgressCircle,
-      Loading
+      Loading,
+      MHeader
     }
   }
 </script>
@@ -232,25 +230,26 @@
   .articles
     position: fixed
     width: 100%
-    top: 50px
-    bottom: 0
+    top: 44px
+    bottom: 60px
+    background-color: #f0eff5
     .toplist
       height: 100%
       overflow: hidden
       .item
         display: flex
-        margin: 0 10px
-        padding-top: 10px
-        height: 100px
+        margin: 10px
         position: relative
+        background-color: #fff
+        color: black
         .progressbar
           position: absolute;
-          top: 10px;
-          bottom: 0;
-          background: gray;
+          top:0;
+          bottom: 0
+          background: green;
           opacity: 0.6;
-        &:last-child
-          padding-bottom: 20px
+        //&:last-child
+          //padding-bottom: 20px
         .progress
           height:2px
           overflow:hidden
@@ -271,7 +270,11 @@
           flex: 0 0 100px
           width: 100px
           height: 100px
-          background-color: $color-highlight-background
+
+          img
+            margin:10px
+            height: 80%
+            width:80%
         .songlist
           flex: 1
           display: flex
@@ -280,11 +283,20 @@
           padding: 0 0 0 10px
           height: 100px
           overflow: hidden
-          background: $color-highlight-background
-          color: $color-text-d
           font-size: $font-size-small
+          .song
+            font-size: 100%
+            line-height: 2em
           .summary
             margin-top:10px
+            line-height :1.5em
+            color: #b2b2b2
+            .summaryWrap
+              .icon-success
+                font-size: 150%
+                color:green
+              span
+                font-size: 80%
         &.selected
           .songlist
             color: green

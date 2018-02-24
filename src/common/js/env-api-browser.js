@@ -5,8 +5,9 @@ const axios = require('axios')
 import dbDdl from 'common/js/db-ddl'
 
 export function interceptUrl(url) {
+  console.log(url)
   if (window.device.platform === 'browser' && url.indexOf('http') === 0) {
-    return location.protocol + '//' + location.host + `/api/url?url=${url}`
+    return location.protocol + '//' + location.host + `/api/url?url=${encodeURIComponent(url)}`
   }
   return url
 }

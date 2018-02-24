@@ -1,10 +1,11 @@
 <template>
   <div class="m-header">
-    <i class="icon-add1" @click.stop="refresh()"></i>
-    <h1 class="text">News</h1>
-    <router-link tag="div" class="mine" to="/user">
-      <i class="icon-more" @click.stop="triggerDownloadAll(!downloadAll)"></i>
-    </router-link>
+    <!--<i class="icon-refresh" @click.stop="refresh()"></i>-->
+    <h1 class="text">列表({{data.length}})</h1>
+    <index-menu></index-menu>
+<!--    <router-link tag="div" class="mine" to="/user">
+      <i class="icon-more icon" @click.stop="triggerDownloadAll(!downloadAll)"></i>
+    </router-link>-->
   </div>
 
 </template>
@@ -12,15 +13,22 @@
 <script type="text/ecmascript-6">
 import {mapGetters, mapMutations, mapActions} from 'vuex'
 import Bus from 'common/js/bus'
-
+import indexMenu from './index-menu'
   export default {
-
+    props: {
+      data: {
+        type: Array,
+        default: function () {
+          return []
+        }
+      }
+    },
   methods:{
   ...mapMutations({
     triggerDownloadAll: 'SET_DOWNLOAD_ALL_STATE'
   }),
   refresh(){
-        Bus.$emit('refresh');   
+        Bus.$emit('refresh');
 
   }
   },
@@ -28,7 +36,8 @@ import Bus from 'common/js/bus'
   ...mapGetters([
     'downloadAll'
   ])
-}
+},
+    components:{indexMenu}
 
   }
 </script>
@@ -41,22 +50,20 @@ import Bus from 'common/js/bus'
     position: relative
     height: 44px
     text-align: center
-    color: $color-theme
-    background: #333;
+
+    background: linear-gradient(180deg,#303036,#3c3b40)
     font-size: 0
     .icon-add1
       position: absolute
       left: 0
       top: 0
       margin-top: 6px
-      margin-left: 20px
     .icon
       display: inline-block
       vertical-align: top
-      margin-top: 6px
-      width: 30px
-      height: 32px
-      margin-right: 9px
+      padding-right:12px
+
+      //margin-right: 9px
       //bg-image('logo')
       background-size: 30px 32px
     .text
@@ -67,12 +74,11 @@ import Bus from 'common/js/bus'
     .mine
       position: absolute
       top: 0
-      right: 0
-      margin-top: 6px
-      margin-right: 20px
+      right: 3px
+      margin-top: 3px
       .icon-mine
         display: block
         padding: 12px
         font-size: 20px
-        color: $color-theme
+
 </style>

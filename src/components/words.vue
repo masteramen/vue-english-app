@@ -1,41 +1,46 @@
 <template>
-  <page title="订阅" class="subscription" >
-
+  <page :title="'生词('+dictList.length+')'" class="words" >
     <div class="listCon">
-      <scroll  class="toplist" ref="subscriptionlist" >
-        <div class="subscription">
-          <mt-checklist
-            align="right"
-            v-model="subscriptionList"
-            :options="['VOA News', 'BBC News', 'CNN News','Fox News',' ABC News','NBC Nightly News Podcast','AP News','VOA Standard English','VOA Special English','VOA English Learning']">
-          </mt-checklist>
+      <scroll  class="toplist" ref="list" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
+        <div>
+          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;">
+            <div>{{pullDownTip}}</div>
+          </div>
+          <ul>
+            <li v-for="(dict,index) in dictList" style="padding:10px;border-top:1px solid #ccc;">
+              <span>{{dict.QTEXT}}</span> - {{dict.RESULT}}<br />
+              <div style="padding-top:10px;color:#777">{{dict.DETAIL}}</div>
+            </li>
+
+          </ul>
         </div>
+
       </scroll>
     </div>
-
   </page>
-
-
 </template>
 
 <script type="text/ecmascript-6">
-  import Bus from 'common/js/bus'
   import Scroll from 'base/scroll2/scroll/scroll'
-  const vConsole = require( 'vconsole')
+  import {configProvider,getDictList} from 'common/js/service'
 
   export default {
     created() {
 
     },
     mounted() {
-
-
+      getDictList().then(dictList=>this.dictList=dictList)
     },
     data() {
       return {
-          fullScreen:true,
-         subscriptionList:['voa','bbc']
-        }
+        pullDownTip: '',
+        isPullingDown: false,
+        pullDownConfig: {
+          threshold: 60,
+          stop: 40
+        },
+        dictList:[]
+      }
 
     },
     filters:{
@@ -43,21 +48,44 @@
 
     },
     methods: {
-      back() {
-        this.show=false
-      },
-      clickVersion(){
-        this.clickVersionCount+=1
-        if(this.clickVersionCount>3){
-          new vConsole()
+    onScroll(pos) {
+      setTimeout(() => {
+        if (this.isPullingDown) {
+          return
         }
-      }
+        if (pos.y >= this.pullDownConfig.threshold) {
+          this.pullDownTip = '松开刷新'
+        } else {
+          this.pullDownTip = '下拉刷新'
+        }
+      }, 0)
+    },
+      onPullingDown(isPullingDown) {
+        console.log('pullingdown...')
+        if (isPullingDown) {
+          this.isPullingDown = true
+          this.pullDownTip = '正在刷新'
+          this.pulldownRefreshDataList()
+        } else this.isPullingDown = false
+        // this.$refs.toplist.forceUpdate()
+      },
+      pulldownRefreshDataList() {
+        getDictList().then(dictList=>this.dictList=dictList).then(x=>{
+          this.$refs.list.forceUpdate(true)
+        });
+      },
     },
     computed:{
 
     },
     watch: {
-
+      config:{
+        handler(val, oldVal){
+          console.log(val)
+          configProvider.save(this.config)
+        },
+        deep:true
+      }
 
     },
     components: {
@@ -69,19 +97,9 @@
 <style  lang="stylus" rel="stylesheet/stylus">
   @import "~common/stylus/variable"
   @import "~common/stylus/mixin"
-  .subscription
-    position: fixed
-    left: 0
-    right: 0
-    top: 0
-    bottom: 0
-    z-index: 1000!important
+  .words
     background: $color-background
-    mt-checklist
-      .mint-checkbox-label
-        margin-left: 0
     .mint-checklist
-
       .mint-cell
         text-align: left
 
@@ -108,16 +126,13 @@
         no-wrap()
         font-size: $font-size-large
         color: $color-text
-   .subscription
-    position: fixed
+  .words
     width: 100%
-    top: 0px
-    bottom: 0
     .listCon
       position: fixed;
       width: 100%;
       top: 44px;
-      bottom: 0px;
+      bottom: 60px;
     .toplist
       height: 100%
       overflow: hidden

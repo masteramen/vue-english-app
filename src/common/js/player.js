@@ -26,6 +26,11 @@ class Player {
       },
       mediaStatus => {
         console.log(`mediaStatus:${mediaStatus}`);
+        if(mediaStatus==5){
+          console.log('play again')
+          this.play();
+          console.log('play again2')
+        }
       }
     );
 
