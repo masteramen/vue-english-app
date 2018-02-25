@@ -6,6 +6,8 @@ export const downloadAll = state => state.downloadAll
 
 export const fullScreen = state => state.fullScreen
 
+export const editMode = state => state.editMode
+
 export const playlist = state => state.playlist
 
 export const sequenceList = state => state.sequenceList

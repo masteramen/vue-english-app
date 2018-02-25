@@ -43,30 +43,6 @@ function downloadLyric(article, onProgress) {
 
 export function getSilent() {
   return Promise.resolve(require('./../../../static/silent.mp3'))
-  // require('../static/silent.mp3')
-
-/*
-  let localFile = 'silent.mp3'
-  return fs.exists(localFile).then(exists => {
-    if (exists) {
-      let url = fs.toURLSync(localFile)
-      console.log(url)
-      return url
-    } else {
-      return Promise.reject()
-    }
-  }).catch(err => {
-    let nativeUrl = fs.toURLSync(localFile)
-    let wwwfile=cordova.file.applicationDirectory + 'www/silent.mp3'
-
-    return fs.download(wwwfile, nativeUrl, {}).then(ret => {
-      return nativeUrl
-    }).catch(err => {
-      // console.log(err);
-      console.log('err')
-    })
-  })
-  */
 }
 
 function downloadAudio(article, onProgress) {
@@ -127,7 +103,6 @@ export function getLatestArticles() {
 }
 
 export function fetchLatest() {
-  console.log('getOrUpdateConfig')
   return runAll()
 }
 
@@ -167,7 +142,6 @@ function getLyricContent(detailObj) {
       let m = fixnum(parseInt(timer / 60))
       let s = fixnum(parseInt(timer % 60))
       let ms = fixnum(0)
-
       str += `[${m}:${s}.${ms}]${line}\r\n`
       timer += takeTImes
     })
@@ -204,7 +178,7 @@ export class Article {
     if (!this.AUDIO_URL) {
       return Promise.reject({code: 1, desc: '找不到音频文件！'})
     }
-    if (navigator.connection.type == Connection.CELL && !configProvider.getConfig().checklistValues.indexOf('download-cell-net-work')) {
+    if (navigator.connection.type === Connection.CELL && configProvider.getConfig().checklistValues.indexOf('download-cell-net-work')===-1) {
       return Promise.reject({code: 0, desc: '请先设置开启手机网络下载音频选项！'})
     }
     return downloadAudio(this, onProgress)

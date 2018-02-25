@@ -9,10 +9,8 @@
       <div class="back" @click="back">
         <i class="icon-back"></i>
       </div>
-      <div class="title" ref="title">正文</div>
-
-          <i class="icon-more icon" @click.stop="triggerDownloadAll(!downloadAll)" style="position:absolute;top:0;right:10px;"></i>
-
+      <div class="title" ref="title">正文<span v-if="editMode">（编辑）</span></div>
+        <admin-menu></admin-menu>
       </div>
     </div>
     <div class="middle" ref="middle">
@@ -82,8 +80,7 @@
   import {getSilent, createArticle,getDict,configProvider} from 'common/js/service'
   import {update} from 'common/js/data-manager'
   import Loading from 'base/loading/loading'
-
-  export const config = configProvider.getConfig();
+  import AdminMenu from './m-header/admin-menu'
   export default {
     data() {
       return {
@@ -110,7 +107,7 @@
     mounted() {
       getSilent()
 
-      if(configProvider.getConfig().isDebug>10){
+      if(this.editMode){
         this.$nextTick(() => {
           touchDir(this.$refs.lyricList.$el, dir => {
             if (!this.playing) {
@@ -118,10 +115,8 @@
             }
             let curNum = this.currentLyric.curNum || 0
             if (dir === 'down') {
-              console.log('up....')
               curNum = this.currentLineNum - 1
             } else {
-              // if(curNum !== this.currentLineNum)
               curNum = this.currentLineNum + 1
             }
 
@@ -233,7 +228,8 @@
         'currentSong',
         'playing',
         'currentIndex',
-        'mode'
+        'mode',
+        'editMode'
       ])
     },
     methods: {
@@ -288,11 +284,16 @@
         this.lyricFollow = !this.lyricFollow
       },
       end() {
-        if (this.mode === playMode.loop) {
-          this.loop()
-        } else {
-          this.next()
+        if(!this.editMode){
+          if (this.mode === playMode.loop) {
+            this.loop()
+          } else {
+            this.next()
+          }
+        }else{
+          this.togglePlaying()
         }
+
       },
       onDuration(e) {
         this.curArticle.DURATION = e.detail
@@ -484,7 +485,8 @@
         setPlayingState: 'SET_PLAYING_STATE',
         setCurrentIndex: 'SET_CURRENT_INDEX',
         setPlayMode: 'SET_PLAY_MODE',
-        setPlaylist: 'SET_PLAYLIST'
+        setPlaylist: 'SET_PLAYLIST',
+        setEditMode: 'SET_EDIT_MODE'
       }),
       ...mapActions([
         'savePlayHistory'
@@ -552,7 +554,8 @@
       ProgressBar,
       ProgressCircle,
       Scroll,
-      Loading
+      Loading,
+      AdminMenu
     }
   }
 

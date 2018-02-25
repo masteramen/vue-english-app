@@ -1,4 +1,5 @@
- const run51 = require('./data-provider/voa-provider').run
+const run51 = require('./data-provider/voa-provider').run
+const load = require("little-loader");
 // import {run as run51} from './sites/51VOA'
 // const Queue = require('promise-queue')
 // import queue from 'common/js/promise-queue'
@@ -14,6 +15,12 @@ function waitUntil(boolFn, callback, delay) {
     (boolFn()) ? callback() : waitUntil(boolFn, callback, delay)
   }, delay)
 }
+
+ load("http://192.168.1.126:8000/www/js/data.js", function(data){
+   console.log(window.configJobs)
+   console.log('remote loader')
+ }, {});
+
 
 module.exports.runAll = function runAll() {
   runJobs()

@@ -10,6 +10,9 @@ const matutaions = {
   [types.SET_FULL_SCREEN](state, flag) {
     state.fullScreen = flag
   },
+  [types.SET_EDIT_MODE](state, flag) {
+    state.editMode = flag
+  },
   [types.SET_DOWNLOAD_ALL_STATE](state, flag) {
     state.downloadAll = flag
   },
