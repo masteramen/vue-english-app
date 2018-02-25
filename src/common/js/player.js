@@ -11,6 +11,25 @@ class Player {
     return this
   }
 
+  tmpPlay(url,onerror,onended){
+    let tmpmedia = new Media(url,
+      () => {
+        console.log('play :' + url)
+      },
+      err => {
+        console.log(err)
+        onerror&&onerror()
+      },
+      mediaStatus => {
+        console.log(`mediaStatus:${mediaStatus}`)
+        if (mediaStatus == Media.MEDIA_STOPPED) {
+          onended&&onended()
+          tmpmedia.release()
+        }
+      }
+    )
+    tmpmedia.play()
+  }
   loopplay(url) {
     if (this.timer) clearInterval(this.timer)
     if (this.my_media) {

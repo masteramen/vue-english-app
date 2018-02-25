@@ -10,10 +10,13 @@
         <i class="icon-back"></i>
       </div>
       <div class="title" ref="title">正文</div>
+
+          <i class="icon-more icon" @click.stop="triggerDownloadAll(!downloadAll)" style="position:absolute;top:0;right:10px;"></i>
+
       </div>
     </div>
     <div class="middle" ref="middle">
-      <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true" @scrollEnd="scrollLyricEnd"   >
+      <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
           <p class="cover"><img :src="curArticle.IMG_URL"/></p>
           <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
@@ -23,7 +26,6 @@
                :class="{'current': currentLyric.curNum-1 ===index}"
                v-for="(line,index) in currentLyric.lines" v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)"></p>
           </div>
-          <div ref="fillScroll" ></div>
         </div>
       </scroll>
       <div class="loading-container" v-show="loadingTitle">
@@ -77,9 +79,11 @@
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle,getDict} from 'common/js/service'
+  import {getSilent, createArticle,getDict,configProvider} from 'common/js/service'
   import {update} from 'common/js/data-manager'
   import Loading from 'base/loading/loading'
+
+  export const config = configProvider.getConfig();
   export default {
     data() {
       return {
@@ -106,34 +110,37 @@
     mounted() {
       getSilent()
 
-      this.$nextTick(() => {
-        console.log(this.$refs.lyricList.$el)
-        touchDir(this.$refs.lyricList.$el, dir => {
-          if (!this.playing) {
-            return
-          }
-          let curNum = this.currentLyric.curNum || 0
-          if (dir === 'down') {
-            console.log('up....')
-            curNum = this.currentLineNum - 1
-          } else {
-            // if(curNum !== this.currentLineNum)
-            curNum = this.currentLineNum + 1
-          }
+      if(configProvider.getConfig().isDebug>10){
+        this.$nextTick(() => {
+          touchDir(this.$refs.lyricList.$el, dir => {
+            if (!this.playing) {
+              return
+            }
+            let curNum = this.currentLyric.curNum || 0
+            if (dir === 'down') {
+              console.log('up....')
+              curNum = this.currentLineNum - 1
+            } else {
+              // if(curNum !== this.currentLineNum)
+              curNum = this.currentLineNum + 1
+            }
 
-          console.log(curNum)
-          let elips = +new Date() - (this.currentLyric.startStamp)
-          console.log(`elips:${elips}`)
+            console.log(curNum)
+            let elips = +new Date() - (this.currentLyric.startStamp)
+            console.log(`elips:${elips}`)
 
-          if (curNum === undefined || curNum < 0 || !this.currentLyric.lines[curNum ]) return
-          this.currentLyric.lines[curNum ].time = elips
+            if (curNum === undefined || curNum < 0 || !this.currentLyric.lines[curNum ]) return
+            this.currentLyric.lines[curNum ].time = elips
 
-          for (let i = curNum + 1; i < this.currentLyric.lines.length; i++) {
-            this.currentLyric.lines[i].time = 100 * 60 * 1000
-          }
+            for (let i = curNum + 1; i < this.currentLyric.lines.length; i++) {
+              this.currentLyric.lines[i].time = 100 * 60 * 1000
+            }
 
-          this.currentLyric.play(elips)
+            this.currentLyric.play(elips)
+          })
         })
+      }
+      this.$nextTick(() => {
         this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
         player.setAudio(this.$refs.audio)
         let _this = this
@@ -176,19 +183,20 @@
             getDict($(this).text().trim()).then(result=>{
               let html = $(this).html()
               $(this).html(`${html}<b>(${result.result})</b>`)
-
-              that.$refs.wordAudio.src = result.audio
+              //alert(result.audio)
+              //that.$refs.wordAudio.src = result.audio
               let playing = that.playing
               if (playing) {
                 that.togglePlaying()
               }
 
-              that.$refs.wordAudio.onerror = that.$refs.wordAudio.onended = function() {
+              let onerror  = function() {
                 if (playing) {
                   that.togglePlaying()
                 }
               }
-              that.$refs.wordAudio.play()
+              player.tmpPlay(result.audio,onerror,onerror)
+              //that.$refs.wordAudio.play()
             })
 
           } else {
@@ -245,6 +253,7 @@
         if (!this.playing) {
           return
         }
+        console.log('here')
         let lineNum = (this.currentLyric.curNum || 1) - 1
         let curLine = this.$refs.lyricLine[lineNum]
 
@@ -255,9 +264,6 @@
             this.$refs.lyricList.scrollToElement(curLine, 1000)
           }
         }
-      },
-      play() {
-        player.play(this.curArticle)
       },
       back() {
         this.setFullScreen(false)
@@ -493,9 +499,7 @@
         let currentArticle = window.sequenceList[(this.mode === playMode.random?window.randomList[newIndex]:newIndex)]
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
-        this.$nextTick(() => {
-          this.$refs.fillScroll.style.height = $(this.$refs.middle).height() - 50 + 'px'
-        })
+
         if (this.currentLyric) {
           // this.currentLyric.seek(0)
           this.currentLyric.stop()

@@ -16,13 +16,10 @@
             {{config.nDay}}天
           </mt-cell>
           </div>
-          <mt-cell title="占用空间大小"></mt-cell>
-          <mt-cell title="软件版本" :value="1.0" ></mt-cell>
-          <mt-cell
-            title="关于本软件"
-            to="//github.com"
-            is-link>
-          </mt-cell>
+          <div @click="clickVersion">
+          <mt-cell title="软件版本" :value="1.0" >{{config.isDebug>10?'Debug':''}}</mt-cell>
+          </div>
+
         </ul>
       </scroll>
       <mt-actionsheet
@@ -117,18 +114,15 @@
     },
     methods: {
       clickNDays(){
-
         this.popupVisible=!this.popupVisible
 
       },
+      clickVersion(){
+        this.config.isDebug+=1
+        console.log(this.config.isDebug)
+      },
       back() {
         this.show=false
-      },
-      clickVersion(){
-        this.clickVersionCount+=1
-        if(this.clickVersionCount>3){
-          new vConsole()
-        }
       }
     },
     computed:{

@@ -5,7 +5,8 @@ const axios = require('axios')
 import dbDdl from 'common/js/db-ddl'
 
 export function interceptUrl(url) {
-  console.log(url)
+  //console.log(url)
+  //if(true)return `http://192.168.1.126:8080/api/url?url=${encodeURIComponent(url)}`;
   if (window.device.platform === 'browser' && url.indexOf('http') === 0) {
     return location.protocol + '//' + location.host + `/api/url?url=${encodeURIComponent(url)}`
   }
@@ -74,6 +75,7 @@ export function all(sql, ...params) {
   if (params && typeof (params[params.length - 1]) === 'function') {
     errorHaneler = params.pop()
   }
+  console.log(sql)
   console.log(params)
   webdb.transaction(function (tx) {
     tx.executeSql(sql, params, function (tx, result) {

@@ -228,7 +228,8 @@ function getConfigProvider() {
     getConfig: function () {
       let config = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
       return Object.assign({
-        checklistValues: [],
+        checklistValues: ['disp-new-word-ts','disp-p-ts'],
+        isDebug:0,
         nDay: '3'
       }, config)
     },
@@ -241,36 +242,40 @@ function getConfigProvider() {
 export const configProvider = getConfigProvider()
 
 import * as ts from 'common/js/translation'
-export function getDict(text){
-  return dataManager.getDict(text).then(dicts=> {
+export function getDict(text) {
+  return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {
-      return {text:dicts[0].QTEXT,result:dicts[0].RESULT,detail:dicts[0].DETAIL,audio:dicts[0].AUDIO}
+      return {text: dicts[0].QTEXT, result: dicts[0].RESULT, detail: dicts[0].DETAIL, audio: dicts[0].AUDIO}
     } else {
       return Promise.reject({'text': text})
     }
-  }).catch(dict=>{
+  }).catch(dict => {
 
-      return ts.translateWithAudio(text).then(dict=>{
-        return fs.ensure('dict').then(_=>{
+    return ts.translateWithAudio(text).then(dict => {
+      return fs.ensure('dict').then(_ => {
           let nativeUrl = fs.toURLSync(`dict/${dict.text}.mp3`)
-
-          return fs.download(envApi.interceptUrl(dict.audio), nativeUrl, {}, progressEvt => {}).then(ret => {
+          return fs.download(envApi.interceptUrl(dict.audio), nativeUrl, {
+            trustAllHosts: true,
+            headers: {
+              'referer': dict.audio,
+              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
+              'Connection': 'close',
+              'Accept-Language': 'zh-CN'
+            }
+          }, progressEvt => {}).then(ret => {
             dict.audio = nativeUrl
             return dict
           })
-        }).then(dict=>{
-
-          let dictObj = {qtext:dict.text,result:dict.result[0],detail:dict.dict&&dict.dict[0]||'',audio:dict.audio}
-          console.log(dictObj)
-          dataManager.saveDict(dictObj)
-          return dict;
-        })
-        })
-
+      }).then(dict => {
+        let dictObj = {qtext: dict.text, result: dict.result[0], detail: dict.dict && dict.dict[0] || '', audio: dict.audio}
+        console.log(dictObj)
+        dataManager.saveDict(dictObj)
+        return dict
+      })
+    })
   })
-
 }
 export function getDictList() {
-  return dataManager.getDictList();
+  return dataManager.getDictList()
 }
 

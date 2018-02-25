@@ -177,9 +177,16 @@ function addConfig(config) {
 function getDict(text) {
 
   return new Promise((resolve, reject) => {
-    db.all(`select * from t_dict where QTEXT ='${text}'`, function(err, all) {
+    db.all(`select * from t_dict where QTEXT ='${text}'`, function(err, rows) {
       if (err)console.log(err)
-      resolve(all)
+      console.log(rows)
+      var contents = []
+
+      for (let i = 0; i < rows.length; i++) {
+        contents.push(rows.item(i))
+      }
+      console.log(contents)
+      resolve(contents)
     })
   })
 }

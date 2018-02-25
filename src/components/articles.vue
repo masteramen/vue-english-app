@@ -5,7 +5,7 @@
 
       <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
         <div>
-          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
+          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
           <ul>
             <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
               <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>

@@ -1,4 +1,3 @@
-/* author: HuangQS<409337645@qq.com> */
 import { supportTouch, showClass, isAndroid } from './js/domhelper'
 
 let winw

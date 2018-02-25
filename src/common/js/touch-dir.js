@@ -3,23 +3,34 @@
  dir:期望触发方向；'up','down','left','right'
  fn :触发后的回调函数
  */
+import { supportTouch } from '../../js/domhelper'
+
+
+const evStart = supportTouch ? 'touchstart' : 'mousedown'
+const evMove = supportTouch ? 'touchmove' : 'mousemove'
+const evEnd = supportTouch ? 'touchend' : 'mouseup'
+
+const getXY = e => e.changedTouches ? e.changedTouches[0] : e
+
 var TouchEvent = function(obj, fn) {
   this.pos = {x: 0, y: 0}// 开始触发位置
   var me = this
-  obj.addEventListener('touchstart', function(event) {
-    var touch = event.touches[0]
-    me.pos.x = touch.pageX
-    me.pos.y = touch.pageY
+  obj.addEventListener(evStart, function(event) {
+   // var touch = event.touches[0]
+    let { pageX, pageY } = getXY(event)
+    me.pos.x = pageX
+    me.pos.y = pageY
     me.curtouch = undefined
   }, false)
-  obj.addEventListener('touchmove', function(event) {
-    var touch = event.touches[0]
+  obj.addEventListener(evMove, function(event) {
+    // var touch = event.touches[0]
+    let { pageX, pageY } = getXY(event)
     me.curtouch = {
-      x: touch.pageX,
-      y: touch.pageY
+      x: pageX,
+      y: pageY
     }
   }, false)
-  obj.addEventListener('touchend', function(event) {
+  obj.addEventListener(evEnd , function(event) {
     if (me.pos && me.curtouch) {
       let dir = me.checkDirV(me.pos, me.curtouch) || me.checkDirH(me.pos, me.curtouch)
       dir && (typeof fn === 'function') && fn(dir)
