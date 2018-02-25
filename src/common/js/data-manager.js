@@ -200,9 +200,9 @@ function getDictList() {
   })
 }
 
-function saveDict({qtext,result,detail}) {
+function saveDict({qtext,result,detail,audio}) {
 
-  db.run('INSERT INTO T_dict (qtext,result,detail) VALUES(?,?,?)',qtext,result,detail
+  db.run('INSERT INTO T_dict (qtext,result,detail,audio) VALUES(?,?,?,?)',qtext,result,detail,audio
     , err => {
       console.log(err)
       if (err) {

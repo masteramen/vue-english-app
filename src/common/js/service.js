@@ -242,20 +242,31 @@ export const configProvider = getConfigProvider()
 
 import * as ts from 'common/js/translation'
 export function getDict(text){
-  return dataManager.getDict(text).then(dicts=>{
-    if(dicts&&dicts.length>0){
-      return dicts[0]
-    }else{
-      //let {qtext,result,detail}={dict.text,dict.result[0],dict.dict[0]};
-      return ts.translateWithAudio(text).then(dict=>{
-
-        let dictObj = {qtext:dict.text,result:dict.result[0],detail:dict.dict[0]}
-        console.log(dictObj)
-        dict.audio=envApi.interceptUrl(dict.audio)
-        dataManager.saveDict(dictObj)
-        ;return dict;
-      })
+  return dataManager.getDict(text).then(dicts=> {
+    if (dicts && dicts.length > 0) {
+      return {text:dicts[0].QTEXT,result:dicts[0].RESULT,detail:dicts[0].DETAIL,audio:dicts[0].AUDIO}
+    } else {
+      return Promise.reject({'text': text})
     }
+  }).catch(dict=>{
+
+      return ts.translateWithAudio(text).then(dict=>{
+        return fs.ensure('dict').then(_=>{
+          let nativeUrl = fs.toURLSync(`dict/${dict.text}.mp3`)
+
+          return fs.download(envApi.interceptUrl(dict.audio), nativeUrl, {}, progressEvt => {}).then(ret => {
+            dict.audio = nativeUrl
+            return dict
+          })
+        }).then(dict=>{
+
+          let dictObj = {qtext:dict.text,result:dict.result[0],detail:dict.dict&&dict.dict[0]||'',audio:dict.audio}
+          console.log(dictObj)
+          dataManager.saveDict(dictObj)
+          return dict;
+        })
+        })
+
   })
 
 }

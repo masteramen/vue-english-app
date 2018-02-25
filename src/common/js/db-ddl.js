@@ -21,7 +21,8 @@ CREATE TABLE IF NOT EXISTS T_DICT(
    ID INTEGER PRIMARY KEY     AUTOINCREMENT,
    QTEXT           TEXT UNIQUE NOT NULL,
    RESULT         TEXT,
-   DETAIL     TEXT
+   DETAIL     TEXT,
+   AUDIO TEXT
 )
 `
 module.exports.ddl = ddl

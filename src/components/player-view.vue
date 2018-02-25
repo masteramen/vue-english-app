@@ -25,11 +25,10 @@
           </div>
           <div ref="fillScroll" ></div>
         </div>
-        <div class="loading-container" v-show="loadingTitle">
-          <loading :title="loadingTitle"></loading>
-        </div>
       </scroll>
-
+      <div class="loading-container" v-show="loadingTitle">
+        <loading :title="loadingTitle"></loading>
+      </div>
     </div>
     <div class="bottom">
       <div class="dot-wrapper">
@@ -616,37 +615,12 @@
         bottom: 130px
         white-space: nowrap
         font-size: 0
-        .middle-r
-          display: inline-block
-          vertical-align: top
-          position: relative
+        .loading-container
+          position: absolute
           width: 100%
-          height: 0
-          padding-top: 80%
-          .cd-wrapper
-            position: absolute
-            left: 10%
-            top: 0
-            width: 80%
-            height: 100%
-            .cd
-              width: 100%
-              height: 100%
-              box-sizing: border-box
-              border: 10px solid rgba(255, 255, 255, 0.1)
-              border-radius: 50%
-              &.play
-                animation: rotate 20s linear infinite
-              &.pause
-                animation-play-state: paused
-              .image
-                position: absolute
-                left: 0
-                top: 0
-                width: 100%
-                height: 100%
-                border-radius: 50%
-
+          top: 50%
+          z-index :1
+          transform: translateY(-50%)
           .playing-lyric-wrapper
             width: 80%
             margin: 30px auto 0 auto
@@ -664,11 +638,7 @@
           width: 100%
           height: 100%
           overflow: hidden
-          .loading-container
-            position: absolute
-            width: 100%
-            top: 50%
-            transform: translateY(-50%)
+
           .lyric-wrapper
 
             margin: 0 20px
