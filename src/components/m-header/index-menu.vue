@@ -3,7 +3,8 @@
         <div class="other">
             <span class="icon-more icon" v-show="$route.path==='/list'" @click.stop="tap()"></span>
             <ul class="tips-menu" :class="tips_isOpen?'tips-open':'tips-close'">
-                <li v-for="item in menuArr" @click="clickMenuItem(item.name)">
+                <li v-for="(item ,index) in menuArr" @touchend="selectItem(item,index)" >
+
                     <span class="iconfont" :class="item.iconClass"></span>
                     <div v-text="item.text"></div>
                 </li>
@@ -34,7 +35,6 @@ export default {
         var self = this;
         $('body').on('touchend', function() {
           self.tips_isOpen = false;
-
         })
     },
     methods: {
@@ -42,8 +42,8 @@ export default {
             event.stopPropagation();
             this.tips_isOpen = !this.tips_isOpen
         },
-      clickMenuItem(name){
-        Bus.$emit(name);
+      selectItem(item,index){
+        Bus.$emit(item.name);
       }
 
     }

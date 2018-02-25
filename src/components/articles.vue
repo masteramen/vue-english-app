@@ -9,7 +9,7 @@
           <ul>
             <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
               <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
-              <div class="songlist">
+              <div class="sequenceList">
                 <div class="song">
                   <span>{{song.TITLE}}</span>
                 </div>
@@ -40,16 +40,14 @@
 </template>
 
 <script type="text/ecmascript-6">
-  // import Scroll from 'base/scroll/scroll'
-  import Scroll from 'base/scroll2/scroll/scroll'
+  import Scroll from 'base/scroll2/scroll'
   import Loading from 'base/loading/loading'
-  import {ERR_OK} from 'api/config'
   import {playlistMixin} from 'common/js/mixin'
-  import {createArticle} from 'common/js/service'
   import {formatDate} from 'common/js/formatDate'
   import Bus from 'common/js/bus'
   import MHeader from 'components/m-header/m-header'
-  import {getLatestArticles, fetchLatest, saveFile, downloadAllArticles, downloadArtilePic, getOrUpdateConfig, saveArticles} from 'common/js/service'
+  import {shuffle} from 'common/js/util'
+  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic,createArticle} from 'common/js/service'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
   export default {
@@ -59,18 +57,18 @@
       this.pulldownRefreshDataList()
     },
     mounted() {
-      Bus.$on('refresh', selected => {
+      Bus.$on('refresh', _ => {
         this.$nextTick(() => {
+          console.log('refresh...')
           this.$refs.toplist.scrollTo(0, this.pullDownConfig.threshold)
           this.$refs.toplist.$emit('scroll', {'x': 0, 'y': this.pullDownConfig.threshold})
           this.$refs.toplist.$emit('pullingDown', true)
         })
       })
       Bus.$on('downloadAll', _ => {
-        setTimeout(_=>{
+        setTimeout(_ => {
           downloadAllArticles(this.songs)
-        },0)
-
+        }, 0)
       })
     },
     data() {
@@ -132,8 +130,8 @@
               this._getLatestArticles()
             }
           }) */.then(() => {
-          this.$refs.toplist.forceUpdate(true)
-        })
+            this.$refs.toplist.forceUpdate(true)
+          })
           .catch(err => {
             console.log('error')
             console.log(err)
@@ -143,16 +141,14 @@
       _getLatestArticles() {
         getLatestArticles().then((res) => {
           console.log(res)
-          if (res.code === ERR_OK) {
+          if (res.contents) {
             let ret = []
             res.contents.forEach(item => {
               ret.push(createArticle(item))
             })
             this.songs = ret
-            console.log('setTopList')
-            console.log(ret)
-            window.songList = ret
-            // this.setTopList(ret)
+            window.sequenceList = ret
+            window.randomList = shuffle(Array(ret.length).fill(0).map((v, i) => i))
           }
           console.log(this.songs)
         }).catch(e => {
@@ -171,20 +167,8 @@
         'currentSong'
       ]),
       selectItem(item, index) {
-        /* this.$router.push({
-            path: `/article/${item.id}`
-          })
-          this.setTopList(item) */
-        // this.selected = item.id
-        // this.setFilterType(0)
-        /* this.selectCurIndex({
-          list: this.songs,
-          index
-        }) */
-
-        this.selectCurIndex({index});
-
-         this.$router.push({
+        this.selectCurIndex({index})
+        this.$router.push({
           path: `/detail`
         })
         console.log(index)
@@ -195,9 +179,7 @@
 
       }),
       ...mapActions([
-        'selectPlay',
-        'selectCurIndex',
-        'randomPlay'
+        'selectCurIndex'
       ])
     },
     computed: {
@@ -238,7 +220,7 @@
       overflow: hidden
       .item
         display: flex
-        margin: 10px
+        border-bottom:1px solid #f2f2f2;
         position: relative
         background-color: #fff
         color: black
@@ -275,20 +257,20 @@
             margin:10px
             height: 80%
             width:80%
-        .songlist
+        .sequenceList
           flex: 1
           display: flex
           flex-direction: column
           justify-content: center
           padding: 0 0 0 10px
-          height: 100px
           overflow: hidden
           font-size: $font-size-small
           .song
-            font-size: 100%
-            line-height: 2em
+            font-size: 150%
+            line-height: 1.5em
+            padding-top:10px
           .summary
-            margin-top:10px
+            margin:10px 0
             line-height :1.5em
             color: #b2b2b2
             .summaryWrap
@@ -298,7 +280,7 @@
               span
                 font-size: 80%
         &.selected
-          .songlist
+          .sequenceList
             color: green
           .song
             no-wrap()

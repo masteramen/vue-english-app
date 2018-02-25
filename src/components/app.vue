@@ -1,6 +1,7 @@
 <template>
+  <div id="app">
 
-  <div id="app" :class="{ onmove:onmove, endmove:endmove }">
+  <div :class="{ onmove:onmove, endmove:endmove }" style="position: relative;height:100%;">
     <slot></slot>
 
 
@@ -22,13 +23,14 @@
 
 
   </div>
-
+  </div>
 </template>
 
 <script>
 import '../css/page.css'
 import {mapGetters, mapMutations, mapActions} from 'vuex'
 const webkit = 'transform' in document.body.style ? '' : '-webkit-';
+
 
 export default {
   name: 'app',
@@ -79,6 +81,12 @@ export default {
 	overflow: hidden;
 	position: relative;
 	height: 100%;
+  padding-top:20px;
+  padding-top:constant(safe-area-inset-top);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom:constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  height:100%;
 }
 </style>
 <style scoped lang="stylus" rel="stylesheet/stylus">

@@ -43,31 +43,17 @@
 </template>
 
 <script type="text/ecmascript-6">
-  import {mapGetters, mapMutations, mapActions} from 'vuex'
-  import animations from 'create-keyframe-animation'
+  import {mapGetters, mapMutations} from 'vuex'
   import {prefixStyle} from 'common/js/dom'
 
-  import ProgressBar from 'base/progress-bar/progress-bar'
   import ProgressCircle from 'base/progress-circle/progress-circle'
   import {playMode} from 'common/js/config'
-  import {shuffle} from 'common/js/util'
-  import Lyric from 'lyric-parser'
-  import Scroll from 'base/scroll/scroll'
-  import player from 'common/js/player'
-  import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle} from 'common/js/service'
-  import {update} from 'common/js/data-manager'
-  import * as ts from 'common/js/translation'
-  import Loading from 'base/loading/loading'
-  const transform = prefixStyle('transform')
-  const webkit = 'transform' in document.body.style ? '' : '-webkit-';
-  const transitionDuration = prefixStyle('transitionDuration')
-  const ransitionDurationValue = 200
+
 
   export default {
     data() {
       return {
-        curArticle: createArticle({}),
+        curArticle: {},
         songReady: false,
         currentTime: 0,
         duration: 1,
@@ -82,7 +68,8 @@
         lastSwipeTime: '',
         showLoading: true,
         loadingTitle: '',
-        popupVisible: true
+        popupVisible: true,
+        isInit:false
       }
     },
     computed: {
@@ -111,6 +98,27 @@
         'fullScreen'
       ])
     },
+    watch: {
+      '$route' (to, from) {
+        if(AdMob){
+          if(to.path=='/detail'){
+
+            //AdMob.showRewardVideoAd()
+            AdMob.createBanner({
+              adId: 'ca-app-pub-3940256099942544/6300978111',
+              position:AdMob.AD_POSITION.BOTTOM_CENTER,
+              autoShow: true
+            })
+          }else{
+            AdMob.removeBanner();
+            if(to.path=='/list'){
+              AdMob.showRewardVideoAd()
+            }
+          }
+        }
+
+      }
+    },
     methods: {
 
       open() {
@@ -118,6 +126,8 @@
         this.$router.push({
           path: `/detail`
         })
+
+
       },
       ...mapMutations({
         setFullScreen: 'SET_FULL_SCREEN'

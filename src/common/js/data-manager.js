@@ -185,11 +185,17 @@ function getDict(text) {
 }
 
 function getDictList() {
-
   return new Promise((resolve, reject) => {
-    db.all(`select * from t_dict`, function(err, all) {
+    db.all(`select * from t_dict`, function(err, rows) {
       if (err)console.log(err)
-      resolve(all)
+      console.log(rows)
+      var contents = []
+
+      for (let i = 0; i < rows.length; i++) {
+        contents.push(rows.item(i))
+      }
+      console.log(contents)
+      resolve(contents)
     })
   })
 }

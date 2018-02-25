@@ -1,12 +1,10 @@
 <template>
   <div class="player" >
-  <div class="normal-player"   ref="playerWrap"
-  >
+  <div class="normal-player"  ref="playerWrap">
     <div class="background">
       <img width="100%" height="100%" :src="curArticle.IMG_URL">
     </div>
     <div class="top">
-      <div class="line" style="height: constant(safe-area-inset-top);height: env(safe-area-inset-top);"></div>
       <div style="position: relative">
       <div class="back" @click="back">
         <i class="icon-back"></i>
@@ -14,9 +12,7 @@
       <div class="title" ref="title">正文</div>
       </div>
     </div>
-    <div class="middle"
-         ref="middle"
-    >
+    <div class="middle" ref="middle">
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true" @scrollEnd="scrollLyricEnd"   >
         <div class="lyric-wrapper" >
           <p class="cover"><img :src="curArticle.IMG_URL"/></p>
@@ -74,15 +70,12 @@
 
 <script type="text/ecmascript-6">
   import {mapGetters, mapMutations, mapActions} from 'vuex'
-  import animations from 'create-keyframe-animation'
-  import {prefixStyle} from 'common/js/dom'
 
   import ProgressBar from 'base/progress-bar/progress-bar'
   import ProgressCircle from 'base/progress-circle/progress-circle'
   import {playMode} from 'common/js/config'
-  import {shuffle} from 'common/js/util'
   import Lyric from 'lyric-parser'
-  import Scroll from 'base/scroll/scroll'
+  import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
   import {getSilent, createArticle,getDict} from 'common/js/service'
@@ -233,8 +226,7 @@
         'currentSong',
         'playing',
         'currentIndex',
-        'mode',
-        'sequenceList'
+        'mode'
       ])
     },
     methods: {
@@ -303,7 +295,8 @@
         update(this.curArticle)
       },
       loop() {
-        player.seekTo(0).play()
+        this.currentTime = 0
+        player.play(null,0)
         if (this.currentLyric) {
           this.currentLyric.seek(0)
         }
@@ -316,6 +309,7 @@
           if (index === this.playlist.length) {
             index = 0
           }
+
           this.setCurrentIndex(index)
         }
       },
@@ -391,15 +385,6 @@
       changeMode() {
         const mode = (this.mode + 1) % 3
         this.setPlayMode(mode)
-
-        let list = null
-        if (mode === playMode.random) {
-          list = shuffle(this.sequenceList)
-        } else {
-          list = this.sequenceList
-        }
-        this.resetCurrentIndex(list)
-        this.setPlaylist(list)
       },
       resetCurrentIndex(list) {
         let index = list.findIndex((item) => {
@@ -506,8 +491,7 @@
         this.currentTime = 0
 
         player.pause()
-        console.log(`newIndex:${newIndex}`)
-        let currentArticle = window.songList[newIndex]
+        let currentArticle = window.sequenceList[(this.mode === playMode.random?window.randomList[newIndex]:newIndex)]
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
         this.$nextTick(() => {
@@ -557,26 +541,6 @@
       },
       fullScreen(value) {
         this.enableOrDisableScreenLock(value)
-        //if(AdMob) AdMob.showInterstitial();
-        if(AdMob){
-
-           AdMob.showRewardVideoAd()
-          if(value){
-            this.$nextTick(() => {
-              AdMob.createBanner({
-                adId: 'ca-app-pub-3940256099942544/6300978111',
-                position:AdMob.AD_POSITION.POS_XY,
-                x:0,
-                y:$(this.$refs.title).offset().top,
-                autoShow: true
-              })
-             // showBannerAtXY(0, $(this.$refs.title).offset().top);
-            })
-          }else{
-            AdMob.removeBanner();
-          }
-        }
-
 
       }
 
@@ -714,9 +678,11 @@
               .mark
                 font-weight:bold
                 color:red
-              line-height: 52px
+              line-height: 2em
+              margin:16px 0
+
               color: $color-text-l
-              font-size: $font-size-medium
+              font-size: 16px
               white-space: normal
               &.current
                 color: $color-text

@@ -43,7 +43,7 @@
 </template>
 
 <script type="text/ecmascript-6">
-  import Scroll from 'base/scroll2/scroll/scroll'
+  import Scroll from 'base/scroll2/scroll'
   import {configProvider} from 'common/js/service'
 
   export default {

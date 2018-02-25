@@ -8,20 +8,19 @@
           </div>
           <ul>
             <li v-for="(dict,index) in dictList" style="padding:10px;border-top:1px solid #ccc;">
-              <span>{{dict.QTEXT}}</span> - {{dict.RESULT}}<br />
-              <div style="padding-top:10px;color:#777">{{dict.DETAIL}}</div>
+              <div><span>{{dict.QTEXT}}</span> - {{dict.RESULT}}<br /></div>
+              <div style="padding-top:10px;color:#777;font-size:80%;">{{dict.DETAIL}}</div>
             </li>
 
           </ul>
         </div>
-
       </scroll>
     </div>
   </page>
 </template>
 
 <script type="text/ecmascript-6">
-  import Scroll from 'base/scroll2/scroll/scroll'
+  import Scroll from 'base/scroll2/scroll'
   import {configProvider,getDictList} from 'common/js/service'
 
   export default {
@@ -41,11 +40,8 @@
         },
         dictList:[]
       }
-
     },
     filters:{
-
-
     },
     methods: {
     onScroll(pos) {
@@ -61,7 +57,6 @@
       }, 0)
     },
       onPullingDown(isPullingDown) {
-        console.log('pullingdown...')
         if (isPullingDown) {
           this.isPullingDown = true
           this.pullDownTip = '正在刷新'
@@ -70,7 +65,9 @@
         // this.$refs.toplist.forceUpdate()
       },
       pulldownRefreshDataList() {
-        getDictList().then(dictList=>this.dictList=dictList).then(x=>{
+        getDictList().then(dictList=>{
+          this.dictList=dictList;
+        }).then(x=>{
           this.$refs.list.forceUpdate(true)
         });
       },
@@ -129,7 +126,7 @@
   .words
     width: 100%
     .listCon
-      position: fixed;
+      position: absolute;
       width: 100%;
       top: 44px;
       bottom: 60px;

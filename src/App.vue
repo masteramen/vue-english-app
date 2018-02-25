@@ -1,14 +1,12 @@
 <template>
-  <app >
+ <app >
   <!-- <tab></tab> -->
   <article-player></article-player>
-    </app>
+   </app>
 </template>
 
 <script type="text/ecmascript-6">
 
-  import MFooter from 'components/m-header/m-footer'
-  import Tab from 'components/tab'
   import ArticlePlayer from 'components/player-controll'
   // import {downloadArtilePic2} from 'common/js/service'
 
@@ -28,8 +26,6 @@
       this.$Lazyload.$on('loaded', handler)
     },
     components: {
-      MFooter,
-      Tab,
       ArticlePlayer
     }
   }

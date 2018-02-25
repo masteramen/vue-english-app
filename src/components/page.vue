@@ -1,7 +1,6 @@
 <template>
 	<div>
 		<div class="navbar bdb" v-if="!noNavBar">
-      <div class="line" style="height: constant(safe-area-inset-top);height: env(safe-area-inset-top);"></div>
       <div style="position: relative;height:44px;">
 			<!-- 头部导航条 -->
 			<slot name="navbar">
@@ -41,11 +40,7 @@
 
 	</div>
 </template>
-
 <script>
-import { getSiblings, getHeight } from '../js/domhelper'
-import wrap from './wrap'
-
 const config = {
 	noNavBar: false,
 }
@@ -88,9 +83,6 @@ export default {
 		window.onresize = _ => {
 			this.clientHeight = getClientHeight();
 		}
-	},
-	components: {
-		wrap
 	}
 }
 </script>

@@ -20,7 +20,7 @@
 
 <script type="text/ecmascript-6">
   import Bus from 'common/js/bus'
-  import Scroll from 'base/scroll2/scroll/scroll'
+  import Scroll from 'base/scroll2/scroll'
   const vConsole = require( 'vconsole')
 
   export default {
