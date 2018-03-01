@@ -206,9 +206,9 @@ function translateWithAudio(text){
 exports.translate = translate
 exports.audio = audio
 
-translateWithAudio('indictment').then(result=>{
+/*translateWithAudio('The United States partners with Pakistani officials to help protect the children of Pakistan from the deadly threat of multi-drug resistant typhoid.').then(result=>{
   console.log(result)
     console.log(result.audio);
-})
+})*/
 exports.translateWithAudio=translateWithAudio
 

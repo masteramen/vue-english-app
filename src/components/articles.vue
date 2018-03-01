@@ -11,7 +11,8 @@
               <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
               <div class="sequenceList">
                 <div class="song">
-                  <span>{{song.TITLE}}</span>
+                  <div> <span>{{song.TITLE}}</span></div>
+                 <div><span>{{song.TITLE_CN}}</span></div>
                 </div>
 
                 <div class="summary">
@@ -283,7 +284,6 @@
           .sequenceList
             color: green
           .song
-            no-wrap()
             line-height: 26px
       .loading-container
         position: absolute

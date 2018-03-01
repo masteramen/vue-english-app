@@ -16,8 +16,10 @@
     <div class="middle" ref="middle">
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
-          <p class="cover"><img :src="curArticle.IMG_URL"/></p>
+          <p class="cover"><img :src="curArticle.IMG_URL" style="max-width:100%;"/></p>
+
           <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
+          <p>{{curArticle.TITLE_CN}}</p>
           <div v-if="currentLyric" >
             <p ref="lyricLine"
                class="text"

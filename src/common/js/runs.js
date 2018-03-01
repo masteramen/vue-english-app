@@ -1,31 +1,27 @@
-const run51 = require('./data-provider/voa-provider').run
-const load = require("little-loader");
-// import {run as run51} from './sites/51VOA'
-// const Queue = require('promise-queue')
-// import queue from 'common/js/promise-queue'
-import {queue,runJobs} from './data-manager'
-// const queue = require('./db-repo').queue
-// var queue = new Queue(1, Infinity)
 
-function waitUntil(boolFn, callback, delay) {
-  'use strict'
-  // if delay is undefined or is not an integer
-  delay = (typeof (delay) === 'undefined' || isNaN(parseInt(delay, 10))) ? 100 : delay
-  setTimeout(function () {
-    (boolFn()) ? callback() : waitUntil(boolFn, callback, delay)
-  }, delay)
-}
+const load = require('little-loader')
+const $ = require('jquery')
+const urllib = require('url')
+const dataManager = require('./data-manager')
+import './data-provider/data'
 
- load("http://192.168.1.126:8000/www/js/data.js", function(data){
-   console.log(window.configJobs)
-   console.log('remote loader')
- }, {});
-
-
+let loadedRemote = false
 module.exports.runAll = function runAll() {
-  runJobs()
   return new Promise((resolve, reject) => {
-    waitUntil(() => queue.getQueueLength() === 0, resolve, 1000)
+    if (false && !loadedRemote) {
+      load('http://192.168.1.126:8000/www/js/data.js', function(data) {
+        loadedRemote = true
+        for (let job of window.configJobs) {
+          job($, urllib, dataManager)
+        }
+        dataManager.runJobs().then(_ => { resolve() })
+      }, {})
+    } else {
+      for (let job of window.configJobs) {
+        job($, urllib, dataManager)
+      }
+      dataManager.runJobs().then(_ => { resolve() })
+    }
   })
 }
 

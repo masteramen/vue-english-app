@@ -2,6 +2,7 @@ const ddl = `
 CREATE TABLE IF NOT EXISTS t_article(
    ID INTEGER PRIMARY KEY     AUTOINCREMENT,
    TITLE           TEXT NOT NULL,
+   TITLE_CN         TEXT,
    CONTENT         TEXT,
    CATEGORY        TEXT,
    IMG_URL        TEXT,

@@ -11,9 +11,9 @@ db.run(dbDDL.ddl)
 db.run(dbDDL.dictDDL)
 function update(detail) {
   console.log('update....')
-  db.run('UPDATE T_ARTICLE SET TITLE=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
-      detail.TITLE || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '',
-       detail.LRC_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION ||'', detail.REFERER || ''
+  db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
+      detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '',
+       detail.LRC_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.REFERER || ''
       , err => {
         console.log(err)
       })
@@ -117,7 +117,7 @@ function getContentLen(detail) {
 
 function getDetailPage(detailObj, extractDetail) {
   return getResponse(detailObj.REFERER).then(response => {
-    detailObj = extractDetail(response,detailObj)
+    detailObj = extractDetail(response, detailObj)
     if (!detailObj || !detailObj.URL) return detailObj
     return getContentLen(detailObj).then(totalBytes => {
       detailObj.TOTAL = totalBytes
@@ -129,7 +129,7 @@ function getDetailPage(detailObj, extractDetail) {
 function getArticlesBasicInfo(lastTime) {
   console.log(lastTime)
   let fromTime = lastTime || 1
-  console.log(`SELECT id,title,POST_DATE,AUTHOR,referer,TOTAL FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`)
+  console.log(`SELECT ID,TITLE,TITLE_CN,POST_DATE,AUTHOR,referer,TOTAL FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`)
   return new Promise((resolve, reject) => {
     db.all(`SELECT id,org_site,title,POST_DATE,AUTHOR,referer ,IMG_URL,AUDIO_URL,TOTAL FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`, function(err, all) {
       if (err)console.log(err)
@@ -153,11 +153,15 @@ function findById(id) {
 const jobConfigs = []
 
 function runJobs() {
+  let then = Promise.resolve()
   for (let item of jobConfigs) {
-    getList(item.listUrl, response => {
-      return item.getItems(item.listUrl, response)
+    then = then.then(_ => {
+      return getList(item.listUrl, response => {
+        return item.getItems(item.listUrl, response)
+      })
     })
   }
+  return then
 }
 function getDetail(detailObj) {
   for (let item of jobConfigs) {
@@ -175,7 +179,6 @@ function addConfig(config) {
   jobConfigs.push(config)
 }
 function getDict(text) {
-
   return new Promise((resolve, reject) => {
     db.all(`select * from t_dict where QTEXT ='${text}'`, function(err, rows) {
       if (err)console.log(err)
@@ -207,9 +210,8 @@ function getDictList() {
   })
 }
 
-function saveDict({qtext,result,detail,audio}) {
-
-  db.run('INSERT INTO T_dict (qtext,result,detail,audio) VALUES(?,?,?,?)',qtext,result,detail,audio
+function saveDict({qtext, result, detail, audio}) {
+  db.run('INSERT INTO T_dict (qtext,result,detail,audio) VALUES(?,?,?,?)', qtext, result, detail, audio
     , err => {
       console.log(err)
       if (err) {
@@ -219,5 +221,23 @@ function saveDict({qtext,result,detail,audio}) {
       }
     })
 }
-module.exports = {getArticlesBasicInfo, findById, getList, queue, getDetail, addConfig, runJobs,update,getDict,saveDict,getDictList}
+function getConfigProvider() {
+  let STORAGE_KEY = 'settings.config'
+  let storage = {
+
+    getConfig: function () {
+      let config = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+      return Object.assign({
+        checklistValues: ['disp-new-word-ts', 'disp-p-ts'],
+        isDebug: 0,
+        nDay: '3'
+      }, config)
+    },
+    save: function (config) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
+    }
+  }
+  return storage
+}
+module.exports = {getArticlesBasicInfo, findById, getList, queue, getDetail, addConfig, runJobs, update, getDict, saveDict, getDictList, getConfigProvider}
 

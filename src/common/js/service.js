@@ -69,6 +69,7 @@ function downloadAudio(article, onProgress) {
         fs.root.getFile(localFile, {create: false}, function (fileEntry) {
           fileEntry.file(f => {
             article.TOTAL = f.size
+            dataManager.update(article)
           })
         })
       })
@@ -107,49 +108,58 @@ export function fetchLatest() {
 }
 
 function getLyricContent(detailObj) {
-  let content = detailObj.CONTENT
+  return new Promise((resolve, reject) => {
+    let content = detailObj.CONTENT
 
-  let duration = 0
-  if (detailObj.DURATION) {
-    duration = detailObj.DURATION
-  } else if (detailObj.TOTAL) {
-    duration = detailObj.TOTAL / 2733529 * 170
-  } else {
-    duration = content.split(/[\n\s]+/).length * 0.7
-  }
+    let duration = 0
+    if (detailObj.DURATION) {
+      duration = detailObj.DURATION
+    } else if (detailObj.TOTAL) {
+      duration = detailObj.TOTAL / 2733529 * 170
+    } else {
+      duration = content.split(/[\n\s]+/).length * 0.7
+    }
 
-  let text = content
+    let text = content
 
-  let timer = 0
-  let str = `[ti:${detailObj.TITLE}]\r\n`
-  str += `[by:${detailObj.REFERER}]\n`
-  let fixnum = n => {
-    return (Array(2).join('0') + n).slice(-2)
-  }
-  var lines = text.replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/)
-    // text.replace(/([.?!])/g, '\n$1\n').replace(/\n+/g, '\n').replace(/\n([.?!])/g, '$1').split(/\n/).map(x => x.trim()).filter(x => x)
-  // .split(/\n/)
+    let timer = 0
+    let str = `[ti:${detailObj.TITLE}]\r\n`
+    str += `[by:${detailObj.REFERER}]\n`
+    let fixnum = n => {
+      return (Array(2).join('0') + n).slice(-2)
+    }
+    let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/);
 
-  let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
-  if (timeLines.lenght > 3) {
-    str = +text.replace(/(\d+(:\d+)+)/g, '[$1]')
-  } else {
-    var words = text.split(/\s+/).filter(x => x)
-    var wordTime = duration / words.length
-    lines.forEach(line => {
-      let wc = line.split(/\s+/).filter(x => x).length
-      let takeTImes = wc * wordTime
-      let m = fixnum(parseInt(timer / 60))
-      let s = fixnum(parseInt(timer % 60))
-      let ms = fixnum(0)
-      str += `[${m}:${s}.${ms}]${line}\r\n`
-      timer += takeTImes
-    })
-  }
-  if (content.length > 1) { str += '\n' + content[1] }
-  str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n')
-
-  return str
+    (async () => {
+      let trs = []
+      for (let line of lines) {
+        let dict = await ts.translateWithAudio(line)
+        trs.push(dict.result[0])
+      }
+      let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
+      if (timeLines.lenght > 3) {
+        str = +text.replace(/(\d+(:\d+)+)/g, '[$1]')
+      } else {
+        var words = text.split(/\s+/).filter(x => x)
+        var wordTime = duration / words.length
+        lines.forEach((line, index) => {
+          let wc = line.split(/\s+/).filter(x => x).length
+          let takeTImes = wc * wordTime
+          let m = fixnum(parseInt(timer / 60))
+          let s = fixnum(parseInt(timer % 60))
+          let ms = fixnum(0)
+          str += `[${m}:${s}.${ms}]${line}|||${trs[index]}\r\n`
+          timer += takeTImes
+        })
+      }
+      // if (content.length > 1) { str += '\n' + content[1] }
+      str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n').replace(/\|\|\|/g, '<br />')
+      detailObj.CONTENT = str
+      let dict = await ts.translateWithAudio(detailObj.TITLE)
+      detailObj.TITLE_CN = dict.result[0]
+      resolve(str)
+    })()
+  })
 }
 
 export class Article {
@@ -164,11 +174,14 @@ export class Article {
     if (this.lyric) {
       return Promise.resolve(this.lyric)
     }
-    if (!this.CONTENT || this.CONTENT.split(/\n/).some(line => !line.match(/\[.*?\]/))) {
+    if (!this.CONTENT // || this.CONTENT.split(/\n/).some(line => !line.match(/\[.*?\]/))
+    ) {
       return downloadLyric(this).then(detailObj => {
-        let lyricContent = getLyricContent(detailObj)
-        console.log(lyricContent)
-        return lyricContent
+        return getLyricContent(detailObj).then(content => {
+          this.CONTENT = content
+          dataManager.update(this)
+          return content
+        })
       })
     }
     return Promise.resolve(this.CONTENT)
@@ -178,7 +191,7 @@ export class Article {
     if (!this.AUDIO_URL) {
       return Promise.reject({code: 1, desc: '找不到音频文件！'})
     }
-    if (navigator.connection.type === Connection.CELL && configProvider.getConfig().checklistValues.indexOf('download-cell-net-work')===-1) {
+    if (navigator.connection.type === Connection.CELL && configProvider.getConfig().checklistValues.indexOf('download-cell-net-work') === -1) {
       return Promise.reject({code: 0, desc: '请先设置开启手机网络下载音频选项！'})
     }
     return downloadAudio(this, onProgress)
@@ -195,25 +208,8 @@ export function createArticle(row) {
 export function getClassfyList() {
   return envApi.getClassfyList()
 }
-function getConfigProvider() {
-  let STORAGE_KEY = 'settings.config'
-  let storage = {
 
-    getConfig: function () {
-      let config = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-      return Object.assign({
-        checklistValues: ['disp-new-word-ts','disp-p-ts'],
-        isDebug:0,
-        nDay: '3'
-      }, config)
-    },
-    save: function (config) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
-    }
-  }
-  return storage
-}
-export const configProvider = getConfigProvider()
+export const configProvider = dataManager.getConfigProvider()
 
 import * as ts from 'common/js/translation'
 export function getDict(text) {
@@ -224,22 +220,21 @@ export function getDict(text) {
       return Promise.reject({'text': text})
     }
   }).catch(dict => {
-
     return ts.translateWithAudio(text).then(dict => {
       return fs.ensure('dict').then(_ => {
-          let nativeUrl = fs.toURLSync(`dict/${dict.text}.mp3`)
-          return fs.download(envApi.interceptUrl(dict.audio), nativeUrl, {
-            trustAllHosts: true,
-            headers: {
-              'referer': dict.audio,
-              'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
-              'Connection': 'close',
-              'Accept-Language': 'zh-CN'
-            }
-          }, progressEvt => {}).then(ret => {
-            dict.audio = nativeUrl
-            return dict
-          })
+        let nativeUrl = fs.toURLSync(`dict/${dict.text}.mp3`)
+        return fs.download(envApi.interceptUrl(dict.audio), nativeUrl, {
+          trustAllHosts: true,
+          headers: {
+            'referer': dict.audio,
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
+            'Connection': 'close',
+            'Accept-Language': 'zh-CN'
+          }
+        }, progressEvt => {}).then(ret => {
+          dict.audio = nativeUrl
+          return dict
+        })
       }).then(dict => {
         let dictObj = {qtext: dict.text, result: dict.result[0], detail: dict.dict && dict.dict[0] || '', audio: dict.audio}
         console.log(dictObj)

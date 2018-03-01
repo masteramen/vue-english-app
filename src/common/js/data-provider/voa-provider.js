@@ -1,7 +1,7 @@
+/*
 const $ = require('cheerio')
-const db = require('../data-manager')
 const url = require('url')
-
+const db = require('../data-manager')
 db.addConfig(
   {
     listUrl: 'http://www.51voa.com/',
@@ -64,5 +64,6 @@ function getLyricContent(detailObj) {
 
   return content
 }
-db.runJobs()
+//db.runJobs()
 
+*/
