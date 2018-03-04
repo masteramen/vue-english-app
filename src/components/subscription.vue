@@ -1,67 +1,67 @@
 <template>
-  <page title="订阅" class="subscription" >
-
-    <div class="listCon">
-      <scroll  class="toplist" ref="subscriptionlist" >
-        <div class="subscription">
-          <mt-checklist
-            align="right"
-            v-model="subscriptionList"
-            :options="['VOA News', 'BBC News', 'CNN News','Fox News',' ABC News','NBC Nightly News Podcast','AP News','VOA Standard English','VOA Special English','VOA English Learning']">
-          </mt-checklist>
-        </div>
-      </scroll>
+  <page :title="'订阅('+subscriptionList.length+')'" class="subscription" :menuTxt="edit?'取消':'编辑'" @menu="edit=!edit" >
+    <div style="text-align: center;font-size:16px;" @click="rssSearch=true">
+      <i class="icon-add" style="font-size:16px;">添加新的订阅</i>
     </div>
-
+    <div class="listCon">
+     <subscription-list :edit="edit"></subscription-list>
+    </div>
+  <search class="search-rss" v-if="rssSearch" @cancel="rssSearch=false"></search>
   </page>
 
 
 </template>
 
 <script type="text/ecmascript-6">
-  import Bus from 'common/js/bus'
   import Scroll from 'base/scroll2/scroll'
-  const vConsole = require( 'vconsole')
+  import Search from 'components/search/search'
+  import {mapGetters} from 'vuex'
+  import SubscriptionList from './suggest/subscription-list'
+  import SubscriptionSearchBox from "../base/search-box/subscription-search-box";
 
-  export default {
+export default {
     created() {
 
     },
     mounted() {
 
-
     },
     data() {
       return {
-          fullScreen:true,
-         subscriptionList:['voa','bbc']
-        }
-
+        fullScreen: true,
+        rssSearch: false,
+        edit:false
+      }
     },
-    filters:{
-
+    filters: {
 
     },
     methods: {
       back() {
-        this.show=false
+        this.show = false
       },
-      clickVersion(){
-        this.clickVersionCount+=1
-        if(this.clickVersionCount>3){
-          new vConsole()
-        }
+      clickVersion() {
+      },
+      showAdd() {
+        this.$router.push({
+          path: `/subscription/search`
+        })
       }
     },
-    computed:{
 
+    computed: {
+      ...mapGetters([
+        'subscriptionList'
+      ])
     },
     watch: {
 
-
     },
     components: {
+      SubscriptionSearchBox,
+      SubscriptionList,
       Scroll,
+      Search
     }
   }
 </script>
@@ -77,6 +77,14 @@
     bottom: 0
     z-index: 1000!important
     background: $color-background
+    .search-rss
+      position:absolute
+      top:0
+      left:0
+      width: 100%
+      height:100%
+      background :#222222
+      z-index:1000
     mt-checklist
       .mint-checkbox-label
         margin-left: 0
@@ -116,7 +124,7 @@
     .listCon
       position: fixed;
       width: 100%;
-      top: 44px;
+      top: 84px;
       bottom: 0px;
     .toplist
       height: 100%

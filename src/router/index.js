@@ -5,6 +5,7 @@ import Detail from 'components/detail'
 import Settings from 'components/settings'
 import Empty from 'components/empty'
 import Subscription from 'components/subscription'
+import Search from 'components/search/search'
 import swipeRouter from '../vue-swipe-router'
 import Words from 'components/words'
 Vue.use(Router)
@@ -34,7 +35,13 @@ export default new Router({
     },
     {
       path: '/subscription',
-      component: Empty
+      component: Empty,
+      children: [
+        {
+          path: '/subscription/search',
+          component: Search
+        }
+      ]
     },
     {
       path: '/list',

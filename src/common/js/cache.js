@@ -9,6 +9,8 @@ const PLAY_MAX_LEN = 200
 const FAVORITE_KEY = '__favorite__'
 const FAVORITE_MAX_LEN = 200
 
+const SUBSCRIPTION_KEY = '__subscription__'
+
 function insertArray(arr, val, compare, maxLen) {
   const index = arr.findIndex(compare)
   if (index === 0) {
@@ -90,5 +92,25 @@ export function deleteFavorite(song) {
 
 export function loadFavorite() {
   return storage.get(FAVORITE_KEY, [])
+}
+
+export function loadSubscriptionList() {
+  return storage.get(SUBSCRIPTION_KEY, [])
+}
+export function saveOrDeleteSubcription(song) {
+  let songs = storage.get(SUBSCRIPTION_KEY, [])
+  console.log('saveOrDeleteSubcription')
+  if (songs.filter(e => e.feedId === song.feedId).length > 0) {
+    deleteFromArray(songs, (item) => {
+      return item.feedId === song.feedId
+    })
+  } else {
+    insertArray(songs, song, (item) => {
+      return song.feedId === item.feedId
+    }, FAVORITE_MAX_LEN)
+  }
+
+  storage.set(SUBSCRIPTION_KEY, songs)
+  return songs
 }
 

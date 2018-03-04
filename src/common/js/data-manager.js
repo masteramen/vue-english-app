@@ -1,5 +1,4 @@
 const urllib = require('url')
-// const request = require('request')
 const Queue = require('promise-queue')
 var queue = new Queue(1, Infinity)
 const axios = require('axios')
@@ -10,7 +9,6 @@ const db = require('./env-api')
 db.run(dbDDL.ddl)
 db.run(dbDDL.dictDDL)
 function update(detail) {
-  console.log('update....')
   db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
       detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '',
        detail.LRC_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.REFERER || ''
@@ -21,9 +19,9 @@ function update(detail) {
 
 function insert(DETAIL) {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,LRC_URL,POST_DATE,AUTHOR,TOTAL) VALUES(?,?,?,?,?,?,?,?,?,?)',
+    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,LRC_URL,POST_DATE,AUTHOR,TOTAL,FEED_ID) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
       DETAIL.TITLE || '', DETAIL.CONTENT || '', DETAIL.AUDIO_URL || '', DETAIL.IMG_URL || '', DETAIL.ORG_SITE || '',
-      DETAIL.REFERER || '', DETAIL.LRC_URL || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || ''
+      DETAIL.REFERER || '', DETAIL.LRC_URL || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID
       , err => {
         console.log(err)
         if (err) {
@@ -36,38 +34,32 @@ function insert(DETAIL) {
 }
 
 function getList(theurl, extractLinks) {
-  return queue.add(function() {
-    return getResponse(theurl).then((response) => {
-      let results = extractLinks(response)
-      for (let detailObj of results) {
-        queue.add(function () {
-          return isExist(detailObj).then(row => {
-            if (row && row.ID) {
-              console.log(row)
-              return row
-            } else {
-              insert(detailObj).then(detailObj => {
-                return detailObj
-              })
-            }
-          })
-        })
-      }
+  return queue.add(() => getResponse(theurl).then((response) => {
+    let results = extractLinks(response)
+    for (let detailObj of results) {
       queue.add(function () {
-        console.log(`done list:${theurl}`)
-       // db.uppostTime(theurl, new Date())
-        return Promise.resolve()
+        return isExist(detailObj).then(row => {
+          if (row && row.ID) {
+            return row
+          } else {
+            insert(detailObj).then(detailObj => {
+              return detailObj
+            })
+          }
+        })
       })
-    }).catch((e) => {
-      console.log(e)
+    }
+    queue.add(function () {
+      return Promise.resolve()
     })
-  })
+  }).catch((e) => {
+    console.log(e)
+  }))
 }
 
 function isExist(DETAIL) {
   return new Promise((resolve, reject) => {
     let sql = `SELECT * FROM T_ARTICLE WHERE REFERER='${DETAIL.REFERER}'`
-    console.log(sql)
 
     db.all(sql, (error, rows) => {
       if (error || rows.length === 0) {
@@ -115,15 +107,18 @@ function getContentLen(detail) {
   })
 }
 
-function getDetailPage(detailObj, extractDetail) {
-  return getResponse(detailObj.REFERER).then(response => {
-    detailObj = extractDetail(response, detailObj)
+async function getDetailPage(detailObj, item) {
+  if (item.url2io) {
+    await item.url2io(detailObj)
+  } else {
+    let response = await getResponse(detailObj.REFERER)
+    item.extractDetail(response, detailObj)
     if (!detailObj || !detailObj.URL) return detailObj
-    return getContentLen(detailObj).then(totalBytes => {
-      detailObj.TOTAL = totalBytes
-      return detailObj
-    })
-  })
+    let totalBytes = await getContentLen(detailObj)
+    detailObj.TOTAL = totalBytes
+  }
+
+  return detailObj
 }
 
 function getArticlesBasicInfo(lastTime) {
@@ -152,22 +147,18 @@ function findById(id) {
 
 const jobConfigs = []
 
-function runJobs() {
-  let then = Promise.resolve()
+async function runJobs() {
   for (let item of jobConfigs) {
-    then = then.then(_ => {
-      return getList(item.listUrl, response => {
-        return item.getItems(item.listUrl, response)
-      })
+    await getList(item.feedId, response => {
+      return item.getItems(item.feedId, response)
     })
   }
-  return then
 }
 function getDetail(detailObj) {
   for (let item of jobConfigs) {
-    if (detailObj.REFERER.match(item.regex)) {
+    if (detailObj.FEED_ID === item.feedId) {
       return queue.add(function () {
-        return getDetailPage(detailObj, item.getDetail).then(detailObj => {
+        return getDetailPage(detailObj, item).then(detailObj => {
           update(detailObj)
           return detailObj
         })

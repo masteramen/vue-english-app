@@ -45,6 +45,9 @@ const matutaions = {
   },
   [types.SET_FILTER_TYPE](state,filterType){
     state.filterType = filterType
+  },
+  [types.SET_SUBSCRIPTION_LIST] (state,list) {
+    state.subscriptionList = list
   }
 }
 

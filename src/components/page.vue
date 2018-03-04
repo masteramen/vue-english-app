@@ -17,7 +17,7 @@
 				<!-- 右边菜单按钮 -->
 				<slot name="menu">
 					<div class="item menu" v-if="menuIcon||menuTxt">
-						<span class="txt pos_center">
+						<span class="txt pos_center" @click="onCickMenu">
 							<i :class="`icon-${menuIcon}`" v-if="menuIcon"></i>
 							{{menuTxt}}
 						</span>
@@ -59,6 +59,7 @@ export default {
 		backTxt: { type:String, default: '返回' },
 		menuTxt: { type:String },
 		menuIcon: { type:String },
+    onMenu: { type:Function },
 		noBack: { type:Boolean },
 		onBack: { type:Function },
 		noBackArrow: { type:Boolean },
@@ -78,6 +79,9 @@ export default {
 			if(typeof this.onBack=='function') this.onBack();
 			else this.$router.back();
 		},
+    onCickMenu(){
+      this.$emit('menu')
+    }
 	},
 	created() {
 		window.onresize = _ => {

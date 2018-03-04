@@ -20,6 +20,13 @@
     <component  class="page detailPage"   :class="{ show:curPath=='/detail'}"  :is="detailPage" v-show="detailPage!=null"
              style="z-index: 10000"   :style="curPath=='/detail'&&currTrans?{ [webkit+'transform']: webkit+currTrans }:{}" ></component>
 
+    <!-- 前一页 -->
+  <!--  <component class="page show" :class="{ prev:isPrev }" :is="prevPage" v-if="prevPage!=null"
+               :style="prevTrans?{ [webkit+'transform']: webkit+prevTrans }:{}" ></component>-->
+    <!-- 当前页 -->
+<!--    <router-view class="page" :class="{ show:isShow, goback:goback }" ref="page"
+                 :style="currTrans?{ [webkit+'transform']: webkit+currTrans }:{}"></router-view>-->
+
 
 
   </div>

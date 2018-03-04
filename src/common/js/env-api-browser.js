@@ -98,16 +98,12 @@ export function getLatestArticles() {
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
       let sql = `SELECT * FROM  T_ARTICLE ORDER BY POST_DATE DESC`
-      console.log(sql)
 
       tx.executeSql(sql, [], function (tx, results) {
-        console.log(results)
         var contents = []
-
         for (let i = 0; i < results.rows.length; i++) {
           contents.push(results.rows.item(i))
         }
-        console.log(contents)
         resolve({'code': 0, 'contents': contents})
       }, function (tx, error) {
         console.log(error)

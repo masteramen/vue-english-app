@@ -117,7 +117,6 @@ window.configJobs.push(function ($,urllib,dataManager) {
       getDetail: getDetail
     }
   )
-  dataManager.runJobs()
 
 });
 

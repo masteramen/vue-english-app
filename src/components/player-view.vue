@@ -21,10 +21,17 @@
           <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
           <p>{{curArticle.TITLE_CN}}</p>
           <div v-if="currentLyric" >
-            <p ref="lyricLine"
-               class="text"
-               :class="{'current': currentLyric.curNum-1 ===index}"
-               v-for="(line,index) in currentLyric.lines" v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)"></p>
+            <div  v-for="(line,index) in currentLyric.lines" >
+              <p ref="lyricLine"
+                 class="text"
+                 :class="{'current': currentLyric.curNum-1 ===index}"
+                v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
+              </p>
+              <lazy-component @show="handlerTS(index,line)" class="text" v-if="reload" >
+                <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
+              </lazy-component>
+            </div>
+
           </div>
         </div>
       </scroll>
@@ -79,7 +86,7 @@
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle,getDict,configProvider} from 'common/js/service'
+  import {getSilent, createArticle, getDict, configProvider} from 'common/js/service'
   import {update} from 'common/js/data-manager'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
@@ -100,7 +107,10 @@
         needUpdateRemoteControl: true,
         lastSwipeTime: '',
         showLoading: true,
-        loadingTitle: ''
+        loadingTitle: '',
+        reload: true,
+        trlines: [],
+        lines:[]
       }
     },
     created() {
@@ -109,7 +119,7 @@
     mounted() {
       getSilent()
 
-      if(this.editMode){
+      if (this.editMode) {
         this.$nextTick(() => {
           touchDir(this.$refs.lyricList.$el, dir => {
             if (!this.playing) {
@@ -177,25 +187,24 @@
         $('.lyric-wrapper').on('click', 'span', function() {
           $(this).toggleClass('mark')
           if ($(this).hasClass('mark')) {
-            getDict($(this).text().trim()).then(result=>{
+            getDict($(this).text().trim()).then(result => {
               let html = $(this).html()
               $(this).html(`${html}<b>(${result.result})</b>`)
-              //alert(result.audio)
-              //that.$refs.wordAudio.src = result.audio
+              // alert(result.audio)
+              // that.$refs.wordAudio.src = result.audio
               let playing = that.playing
               if (playing) {
                 that.togglePlaying()
               }
 
-              let onerror  = function() {
+              let onerror = function() {
                 if (playing) {
                   that.togglePlaying()
                 }
               }
-              player.tmpPlay(result.audio,onerror,onerror)
-              //that.$refs.wordAudio.play()
+              player.tmpPlay(result.audio, onerror, onerror)
+              // that.$refs.wordAudio.play()
             })
-
           } else {
             $(this).find('b').remove()
           }
@@ -235,6 +244,11 @@
       ])
     },
     methods: {
+      handlerTS (index,line) {
+        this.curArticle.tr(this.lines,index).then(result => {
+          this.trlines.splice(index, 1, result)
+        })
+      },
       lyricPan(e) {
         console.log(e)
       },
@@ -286,16 +300,15 @@
         this.lyricFollow = !this.lyricFollow
       },
       end() {
-        if(!this.editMode){
+        if (!this.editMode) {
           if (this.mode === playMode.loop) {
             this.loop()
           } else {
             this.next()
           }
-        }else{
+        } else {
           this.togglePlaying()
         }
-
       },
       onDuration(e) {
         this.curArticle.DURATION = e.detail
@@ -304,7 +317,7 @@
       },
       loop() {
         this.currentTime = 0
-        player.play(null,0)
+        player.play(null, 0)
         if (this.currentLyric) {
           this.currentLyric.seek(0)
         }
@@ -365,7 +378,6 @@
       },
       onProgressBarChange(percent) {
         let currentTime = this.curArticle.DURATION * percent
-        console.log('currentTime:' + currentTime)
         player.seekTo(currentTime)
         if (this.currentLyric) {
           this.currentLyric.seek(currentTime * 1000)
@@ -376,19 +388,18 @@
       },
       playTime(interval) {
         console.log(new Date())
-        if(this.clickTimer) {
+        if (this.clickTimer) {
           player.seekTo(interval / 1000)
           // player.play(this.curArticle.AUDIO_URL, interval / 1000)
           if (this.currentLyric) {
             this.currentLyric.seek(interval)
           }
+        } else {
+          this.clickTimer = setTimeout(() => {
+            clearTimeout(this.clickTimer)
+            this.clickTimer = false
+          }, 400)
         }
-        else this.clickTimer = setTimeout(() => {
-          clearTimeout(this.clickTimer)
-          this.clickTimer = false
-
-        }, 400);
-
       },
       changeMode() {
         const mode = (this.mode + 1) % 3
@@ -417,32 +428,38 @@
             this.loadingTitle = ''
           }).catch(err => {
             console.log(err)
-            if(err&&err.desc){
+            if (err && err.desc) {
               this.loadingTitle = `加载音频发生错误 :${err.desc}`
             }
-            if(!err || err.code!=0){
-              setTimeout(_=>{
+            if (!err || err.code != 0) {
+              setTimeout(_ => {
                 this.error()
-              },3000)
-
+              }, 3000)
             }
-
           })
         }
       },
-      getLyric() {
+      getLyric: function () {
         this.loadingTitle = '正在加载内容'
         let id = this.curArticle.ID
         return this.curArticle.getLyric()
-          .then(lyric => {
+          .then(({lines, lyric}) => {
+            console.log(lines)
             if (id !== this.curArticle.ID) return
+            this.lines = lines
+            this.trlines = [...Array(lines.length)].map((_, i) => false)
+            this.reload = false
+            this.$nextTick(() => {
+              setTimeout(_ => {
+                this.reload = true
+              }, 500)
+            })
             if (this.currentLyric) {
               this.currentLyric.stop()
               delete this.currentLyric
             }
             this.loadingTitle = ''
             if (lyric) this.currentLyric = new Lyric(lyric, this.handleLyric)
-            console.log('lyric load success')
           })
       },
       handleLyric({ lineNum, txt }) {
@@ -500,9 +517,10 @@
         this.currentTime = 0
 
         player.pause()
-        let currentArticle = window.sequenceList[(this.mode === playMode.random?window.randomList[newIndex]:newIndex)]
+        let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
+
 
         if (this.currentLyric) {
           // this.currentLyric.seek(0)
@@ -548,7 +566,6 @@
       },
       fullScreen(value) {
         this.enableOrDisableScreenLock(value)
-
       }
 
     },
@@ -592,7 +609,7 @@
         filter: blur(20px)
       .top
         position: relative
-        background: $color-background
+        //background: $color-background
         z-index: 100
         .back
           position absolute

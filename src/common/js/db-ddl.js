@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS t_article(
    ORG_SITE       TEXT,
    REFERER        TEXT UNIQUE NOT NULL,
    AUTHOR        TEXT ,
-   POST_DATE  TEXT
+   POST_DATE  TEXT,
+   FEED_ID    TEXT
 )
 `
 const dictDDL = `

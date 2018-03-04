@@ -29,7 +29,8 @@ if (device.platform != 'browser') {
 
 Vue.use(VueLazyLoad, {
   loading: 'https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=Loading...', // require('https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=Loading...'),
-  error: 'https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=?'// require('common/image/default.png')
+  error: 'https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=?',// require('common/image/default.png')
+  lazyComponent: true
 })
 
 /* eslint-disable no-new */

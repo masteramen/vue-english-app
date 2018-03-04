@@ -2,6 +2,7 @@ import Queue from 'common/js/promise-queue'
 import CordovaPromiseFS from 'common/js/promise-fs'
 import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
+
 const dataManager = require('./data-manager')
 
 const fs = CordovaPromiseFS({
@@ -33,16 +34,13 @@ export function downloadArtilePic(article, onProgress) {
   })
 }
 
-function downloadLyric(article, onProgress) {
-  if (article.CONTENT) return Promise.resolve(article)
-  return dataManager.getDetail(article).then(detailObj => {
-    console.log(article)
-    return detailObj
-  })
+async function downloadLyric(article, onProgress) {
+  if (article.CONTENT) return article
+  return await dataManager.getDetail(article)
 }
 
-export function getSilent() {
-  return Promise.resolve(require('./../../../static/silent.mp3'))
+export async function getSilent() {
+  return require('./../../../static/silent.mp3')
 }
 
 function downloadAudio(article, onProgress) {
@@ -87,7 +85,6 @@ let downLoadQueue = new Queue(1)
 export function downloadAllArticles(articles) {
   articles.forEach(article => {
     downLoadQueue.add(function () {
-      console.log('download .........' + article.ID)
       return article.getLyric().then(() => {
         return article.getAudio()
       })
@@ -107,59 +104,50 @@ export function fetchLatest() {
   return runAll()
 }
 
-function getLyricContent(detailObj) {
-  return new Promise((resolve, reject) => {
-    let content = detailObj.CONTENT
+function formate2Lyric(detailObj) {
+  let duration = 0
+  let content = detailObj.CONTENT
+  if (detailObj.DURATION) {
+    duration = detailObj.DURATION
+  } else if (detailObj.TOTAL) {
+    duration = detailObj.TOTAL / 2733529 * 170
+  } else {
+    duration = content.split(/[\n\s]+/).length * 0.7
+  }
 
-    let duration = 0
-    if (detailObj.DURATION) {
-      duration = detailObj.DURATION
-    } else if (detailObj.TOTAL) {
-      duration = detailObj.TOTAL / 2733529 * 170
+  let text = content
+
+  let timer = 0
+  let str = `[ti:${detailObj.TITLE}]\r\n`
+  str += `[by:${detailObj.REFERER}]\n`
+  let fixnum = n => {
+    return (Array(2).join('0') + n).slice(-2)
+  }
+  let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/)
+
+  return (async () => {
+    let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
+    if (timeLines.lenght > 3) {
+      str = +text.replace(/(\d+(:\d+)+)/g, '[$1]')
     } else {
-      duration = content.split(/[\n\s]+/).length * 0.7
+      var words = text.split(/\s+/).filter(x => x)
+      var wordTime = duration / words.length
+      lines.forEach((line, index) => {
+        let wc = line.split(/\s+/).filter(x => x).length
+        let takeTImes = wc * wordTime
+        let m = fixnum(parseInt(timer / 60))
+        let s = fixnum(parseInt(timer % 60))
+        let ms = fixnum(0)
+        str += `[${m}:${s}.${ms}]${line}\n`
+        timer += takeTImes
+      })
     }
-
-    let text = content
-
-    let timer = 0
-    let str = `[ti:${detailObj.TITLE}]\r\n`
-    str += `[by:${detailObj.REFERER}]\n`
-    let fixnum = n => {
-      return (Array(2).join('0') + n).slice(-2)
-    }
-    let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/);
-
-    (async () => {
-      let trs = []
-      for (let line of lines) {
-        let dict = await ts.translateWithAudio(line)
-        trs.push(dict.result[0])
-      }
-      let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
-      if (timeLines.lenght > 3) {
-        str = +text.replace(/(\d+(:\d+)+)/g, '[$1]')
-      } else {
-        var words = text.split(/\s+/).filter(x => x)
-        var wordTime = duration / words.length
-        lines.forEach((line, index) => {
-          let wc = line.split(/\s+/).filter(x => x).length
-          let takeTImes = wc * wordTime
-          let m = fixnum(parseInt(timer / 60))
-          let s = fixnum(parseInt(timer % 60))
-          let ms = fixnum(0)
-          str += `[${m}:${s}.${ms}]${line}|||${trs[index]}\r\n`
-          timer += takeTImes
-        })
-      }
       // if (content.length > 1) { str += '\n' + content[1] }
-      str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n').replace(/\|\|\|/g, '<br />')
-      detailObj.CONTENT = str
-      let dict = await ts.translateWithAudio(detailObj.TITLE)
-      detailObj.TITLE_CN = dict.result[0]
-      resolve(str)
-    })()
-  })
+    str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n')
+    let dict = await ts.translateWithAudio(detailObj.TITLE)
+    detailObj.TITLE_CN = dict.result[0]
+    return [lines, str]
+  })()
 }
 
 export class Article {
@@ -170,21 +158,37 @@ export class Article {
     }
   }
 
-  getLyric(updateSong) {
-    if (this.lyric) {
-      return Promise.resolve(this.lyric)
+  async getLyric(updateSong) {
+    let lyric = ''
+    let lines = []
+
+    if (!this.CONTENT) {
+      await downloadLyric(this);
+      [lines, lyric] = await formate2Lyric(this)
+      console.log(lines)
+      this.CONTENT = true
+      await fs.write(`${this.ID}.json`, JSON.stringify([lines, lyric]))
+      await dataManager.update(this)
+    } else {
+      [lines, lyric] = JSON.parse(await fs.read(`${this.ID}.json`))
     }
-    if (!this.CONTENT // || this.CONTENT.split(/\n/).some(line => !line.match(/\[.*?\]/))
-    ) {
-      return downloadLyric(this).then(detailObj => {
-        return getLyricContent(detailObj).then(content => {
-          this.CONTENT = content
-          dataManager.update(this)
-          return content
-        })
-      })
+    return {lines, lyric}
+  }
+
+  async tr(lines, index) {
+    let seq = `${this.ID}-${index}-tr.txt`
+    try {
+      if (await fs.exists(seq)) {
+        return await fs.read(seq)
+      }
+    } catch (e) {
+      console.log(e)
     }
-    return Promise.resolve(this.CONTENT)
+
+    let dict = await ts.translateWithAudio(lines[index])
+    await fs.write(seq, dict.result[0])
+
+    return dict.result[0]
   }
 
   getAudio(onProgress) {
@@ -200,13 +204,8 @@ export class Article {
 }
 
 export function createArticle(row) {
-  console.log(row)
   row.percent = 0
   return new Article(row)
-}
-
-export function getClassfyList() {
-  return envApi.getClassfyList()
 }
 
 export const configProvider = dataManager.getConfigProvider()
