@@ -1,13 +1,10 @@
 <template>
- <app >
-  <!-- <tab></tab> -->
-  <article-player></article-player>
-   </app>
+ <app></app>
 </template>
 
 <script type="text/ecmascript-6">
 
-  import ArticlePlayer from 'components/player-controll'
+
   // import {downloadArtilePic2} from 'common/js/service'
 
   function handler ({ el, src }, formCache) {
@@ -26,7 +23,7 @@
       this.$Lazyload.$on('loaded', handler)
     },
     components: {
-      ArticlePlayer
+
     }
   }
 </script>

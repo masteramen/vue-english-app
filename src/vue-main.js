@@ -29,7 +29,7 @@ if (device.platform != 'browser') {
 
 Vue.use(VueLazyLoad, {
   loading: 'https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=Loading...', // require('https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=Loading...'),
-  error: 'https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=?',// require('common/image/default.png')
+  error: 'https://fakeimg.pl/100x100/282828/eae0d0/?retina=1&text=?', // require('common/image/default.png')
   lazyComponent: true
 })
 
@@ -74,12 +74,12 @@ if (AdMob) {
   AdMob.setOptions({isTesting: true}, _ => {
     AdMob.prepareInterstitial({adId: admobid.interstitial, autoShow: false})
 
-    AdMob.prepareRewardVideoAd({adId: 'ca-app-pub-3940256099942544/1712485313', autoShow: true}, _ => {
+   /* AdMob.prepareRewardVideoAd({adId: 'ca-app-pub-3940256099942544/1712485313', autoShow: true}, _ => {
 
 
     }, _ => {
       alert('reward fail')
-    })
+    })*/
 
     // alert('ready1')
   })

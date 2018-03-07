@@ -96,6 +96,7 @@
   @import "~common/stylus/mixin"
   .words
     background: $color-background
+    z-index: 1000 !important
     .mint-checklist
       .mint-cell
         text-align: left

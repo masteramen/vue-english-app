@@ -37,18 +37,19 @@ export default function (app, opts = {}) {
     if (arr.length > 1) console.log(arr)
     return arr.length ? arr[0].component : null
   }
+  const getSlideItem = (path) => {
+    return {component: getComponent(path), name: path.replace('t_','')}
+  }
 
   let pathArr = JSON.parse(sessionStorage.pathArr || '[]') // 路由路径本地存储
-  app.detailPage = getComponent('/t_detail')
-  app.listPage = getComponent('/t_list')
-  app.settingsPage = getComponent('/t_settings')
-  app.subscriptionPage = getComponent('/t_subscription')
-  app.wordsPage = getComponent('/t_words')
+
+  app.slides = ['/t_list'].map(x => getSlideItem(x))
   router.beforeEach((to, from, next) => {
     const fromPath = from.matched[0].path
     const toPath = to.matched[0].path
+    console.log(toPath)
     app.curPath = toPath
-      let prevPath = fromPath
+    let prevPath = fromPath
 
     if (!pathArr.length) pathArr.push(fromPath)
     const toIndex = pathArr.indexOf(toPath)

@@ -43,7 +43,6 @@ html,body,.wh100{height: 100%;width: 100%;}
     -webkit-transform: translateX(100%);
     transform: translateX(100%);
     transition: all 0.3s ease;
-    z-index: 1;
     /*-webkit-transition: -webkit-transform ease-in-out 660ms;
     transition: transform ease-in-out 660ms;*/
     overflow: hidden;

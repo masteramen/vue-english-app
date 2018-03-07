@@ -3,7 +3,7 @@ const Queue = require('promise-queue')
 var queue = new Queue(1, Infinity)
 const axios = require('axios')
 const dbDDL = require('./db-ddl')
-
+const $ = require('jquery')
 const db = require('./env-api')
 
 db.run(dbDDL.ddl)
@@ -108,16 +108,29 @@ function getContentLen(detail) {
 }
 
 async function getDetailPage(detailObj, item) {
-  if (item.url2io) {
-    await item.url2io(detailObj)
-  } else {
-    let response = await getResponse(detailObj.REFERER)
-    item.extractDetail(response, detailObj)
-    if (!detailObj || !detailObj.URL) return detailObj
-    let totalBytes = await getContentLen(detailObj)
-    detailObj.TOTAL = totalBytes
+  try {
+    if (item.url2io) {
+      await item.url2io(detailObj)
+    } else {
+      let response = await getResponse(detailObj.REFERER)
+      item.getDetail(response, detailObj)
+      if (!detailObj || !detailObj.URL) return detailObj
+      let totalBytes = await getContentLen(detailObj)
+      detailObj.TOTAL = totalBytes
+    }
+  } catch (e) {
+    console.log(e)
   }
+  if (!detailObj.CONTENT || !detailObj.CONTENT.trim()) {
+    let response = await getResponse(detailObj.REFERER)
+    let maxP = null
+    $(response.data).find('p').parent().toArray().forEach(pp => {
+      if (!maxP)maxP = pp
+      else if ($(maxP).find('p').length < $(pp).find('p').length)maxP = pp
+    })
 
+    if (maxP && $(maxP).find('p').length > 0) detailObj.CONTENT = $(maxP).find('p').toArray().map(p => $(p).text()).join('\n')
+  }
   return detailObj
 }
 

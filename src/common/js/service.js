@@ -85,7 +85,7 @@ let downLoadQueue = new Queue(1)
 export function downloadAllArticles(articles) {
   articles.forEach(article => {
     downLoadQueue.add(function () {
-      return article.getLyric().then(() => {
+      return article.getLyric(true).then(() => {
         return article.getAudio()
       })
     }, article).then(() => {
@@ -123,7 +123,7 @@ function formate2Lyric(detailObj) {
   let fixnum = n => {
     return (Array(2).join('0') + n).slice(-2)
   }
-  let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/)
+  let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/).filter(n=>n.trim())
 
   return (async () => {
     let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
@@ -158,20 +158,25 @@ export class Article {
     }
   }
 
-  async getLyric(updateSong) {
+  async getLyric(translate) {
     let lyric = ''
     let lines = []
 
     if (!this.CONTENT) {
       await downloadLyric(this);
       [lines, lyric] = await formate2Lyric(this)
-      console.log(lines)
       this.CONTENT = true
       await fs.write(`${this.ID}.json`, JSON.stringify([lines, lyric]))
       await dataManager.update(this)
     } else {
       [lines, lyric] = JSON.parse(await fs.read(`${this.ID}.json`))
     }
+    if (translate) {
+      for (let index = 0; index < lines.length; index++) {
+        await tr(lines, index)
+      }
+    }
+
     return {lines, lyric}
   }
 

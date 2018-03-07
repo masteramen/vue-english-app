@@ -112,7 +112,8 @@
           }else{
             AdMob.removeBanner();
             if(to.path=='/list'){
-              AdMob.showRewardVideoAd()
+              //AdMob.showRewardVideoAd()
+              AdMob.showInterstitial()
             }
           }
         }
@@ -156,7 +157,6 @@
     -webkit-transform-origin: 0 0;
     background-color: #b7b7b7;
     height: 1px;
-    z-index: 2;
   }
 </style>
 <style  scoped lang="stylus" rel="stylesheet/stylus">
@@ -166,7 +166,6 @@
     bottom:0;
     position:absolute;
     width:100%;
-    z-index:2
     .mini-player
       display: flex
       align-items: center

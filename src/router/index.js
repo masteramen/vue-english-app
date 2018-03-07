@@ -7,6 +7,7 @@ import Empty from 'components/empty'
 import Subscription from 'components/subscription'
 import Search from 'components/search/search'
 import swipeRouter from '../vue-swipe-router'
+import Player from 'components/player'
 import Words from 'components/words'
 Vue.use(Router)
 Vue.use(swipeRouter)
@@ -18,7 +19,7 @@ export default new Router({
       redirect: '/list'
     },
     {
-      path: '/t_settings',
+      path: '/settings',
       component: Settings
     },
     {
@@ -30,12 +31,8 @@ export default new Router({
       component: Detail
     },
     {
-      path: '/t_subscription',
-      component: Subscription
-    },
-    {
       path: '/subscription',
-      component: Empty,
+      component: Subscription,
       children: [
         {
           path: '/subscription/search',
@@ -48,20 +45,12 @@ export default new Router({
       component: Empty
     },
     {
-      path: '/settings',
-      component: Empty
-    },
-    {
       path: '/detail',
-      component: Empty
-    },
-    {
-      path: '/t_words',
-      component: Words
+      component: Detail
     },
     {
       path: '/words',
-      component: Empty
+      component: Words
     }
 
   ]

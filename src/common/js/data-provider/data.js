@@ -9,7 +9,9 @@ window.configJobs.push(function ($,urllib,dataManager) {
       let a = $('a', li).last()
       var text = a.text()
       var absUrl = urllib.resolve(listUrl, a.attr('href'))
-      var link = {'REFERER': absUrl, 'TITLE': text, 'ORG_SITE': 'VOA', 'POST_TIME': new Date(response.headers.date).getTime()}
+      var link = {'REFERER': absUrl, 'TITLE': text, 'ORG_SITE': 'VOA',
+        'FEED_ID': "http://www.51voa.com/",
+        'POST_TIME': new Date(response.headers.date).getTime()}
       results.push(link)
 
     }
@@ -57,8 +59,7 @@ window.configJobs.push(function ($,urllib,dataManager) {
   }
   dataManager.addConfig(
     {
-      listUrl: 'http://www.51voa.com/',
-      regex: /51voa\.com/,
+      feedId: 'http://www.51voa.com/',
       getItems: getItems,
       getDetail: getDetail
     }
@@ -85,6 +86,7 @@ window.configJobs.push(function ($,urllib,dataManager) {
         'REFERER': absUrl,
         'TITLE': text,
         'ORG_SITE': 'BBC',
+        'FEED_ID': "http://feeds.bbci.co.uk/news/world/rss.xml",
         'POST_TIME': pubDate.getTime(),
         'IMG_URL': thumbnail
       }
@@ -111,8 +113,7 @@ window.configJobs.push(function ($,urllib,dataManager) {
 
   dataManager.addConfig(
     {
-      listUrl: 'http://feeds.bbci.co.uk/news/world/rss.xml',
-      regex: /bbc.*?/,
+      feedId: 'http://feeds.bbci.co.uk/news/world/rss.xml',
       getItems: getItems,
       getDetail: getDetail
     }
