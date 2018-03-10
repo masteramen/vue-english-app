@@ -12,7 +12,9 @@
               <div class="sequenceList">
                 <div class="song">
                   <div> <span>{{song.TITLE}}</span></div>
-                 <div><span>{{song.TITLE_CN}}</span></div>
+                  <lazy-component @show="handlerTSCNTITLE(song)" >
+                    <span>{{song.TITLE_CN}}</span>
+                  </lazy-component>
                 </div>
 
                 <div class="summary">
@@ -26,9 +28,9 @@
                   </div>
                 </div>
               </div>
-              <div class="icon">
-                <img  :id="song.ID"  v-lazy="song.IMG_URL" @loaded="loadPicUrl($event,song)" />
-              </div>
+              <lazy-component @show="handlerIMG(song,song.IMG_URL)" class="icon" >
+                <img  :id="song.ID"  :dataSrc="song.IMG_URL" v-lazy="song.IMG_URL"   />
+              </lazy-component>
             </li>
           </ul>
         </div>
@@ -95,8 +97,16 @@
       }
     },
     methods: {
-      loadPicUrl(event, item) {
-        downloadArtilePic(item)
+      handlerIMG(item,url) {
+        console.log('load:'+item.IMG_URL)
+        downloadArtilePic(item).then(nUrl=>{
+          console.log('done '+url+' => '+nUrl)
+        })
+      },
+      handlerTSCNTITLE(item){
+        if(!item.TITLE_CN){
+          item.tsTitle()
+        }
       },
       onScroll(pos) {
         setTimeout(() => {

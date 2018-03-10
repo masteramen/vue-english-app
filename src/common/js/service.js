@@ -85,7 +85,9 @@ let downLoadQueue = new Queue(1)
 export function downloadAllArticles(articles) {
   articles.forEach(article => {
     downLoadQueue.add(function () {
-      return article.getLyric(true).then(() => {
+      return article.getLyric(true).then(()=>{
+        return article.tsTitle()
+      }).then(() => {
         return article.getAudio()
       })
     }, article).then(() => {
@@ -145,8 +147,6 @@ function formate2Lyric(detailObj) {
     }
       // if (content.length > 1) { str += '\n' + content[1] }
     str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n')
-    let dict = await ts.translateWithAudio(detailObj.TITLE)
-    detailObj.TITLE_CN = dict.result[0]
     return [lines, str]
   })()
 }
@@ -158,7 +158,11 @@ export class Article {
       this[k] = data[k]
     }
   }
-
+  async tsTitle(){
+    let dict = await ts.translateWithAudio(this.TITLE)
+    this.TITLE_CN = dict.result[0]
+    await dataManager.update(this)
+  }
   async getLyric(translate) {
     let lyric = ''
     let lines = []

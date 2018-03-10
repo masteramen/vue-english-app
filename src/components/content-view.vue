@@ -207,6 +207,7 @@
         if (this.currentLyric) {
           // this.currentLyric.seek(0)
           this.currentLyric.stop()
+          this.currentLyric = null
         }
         this.getLyric()
       }

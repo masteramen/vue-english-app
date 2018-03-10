@@ -110,7 +110,7 @@
         loadingTitle: '',
         reload: true,
         trlines: [],
-        lines:[]
+        lines: []
       }
     },
     created() {
@@ -244,8 +244,8 @@
       ])
     },
     methods: {
-      handlerTS (index,line) {
-        this.curArticle.tr(this.lines,index).then(result => {
+      handlerTS (index, line) {
+        this.curArticle.tr(this.lines, index).then(result => {
           this.trlines.splice(index, 1, result)
         })
       },
@@ -444,7 +444,6 @@
         let id = this.curArticle.ID
         return this.curArticle.getLyric()
           .then(({lines, lyric}) => {
-            console.log(lines)
             if (id !== this.curArticle.ID) return
             this.lines = lines
             this.trlines = [...Array(lines.length)].map((_, i) => false)
@@ -513,19 +512,18 @@
     },
     watch: {
       currentIndex(newIndex, oldIndex) {
-
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
-        if(!currentArticle.AUDIO_URL) return
+        if (!currentArticle.AUDIO_URL) return
         this.songReady = false
         this.currentTime = 0
         player.pause()
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
 
-
         if (this.currentLyric) {
           // this.currentLyric.seek(0)
           this.currentLyric.stop()
+          this.currentLyric = null
         }
 
         getSilent().then(url => {
@@ -608,6 +606,7 @@
         z-index: -1
         opacity: 0.6
         filter: blur(20px)
+        padding:20px
       .top
         position: relative
         //background: $color-background
