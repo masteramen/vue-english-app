@@ -125,10 +125,8 @@
       open() {
         this.setFullScreen(true)
         this.$router.push({
-          path: `/detail`
+          path: `/player`
         })
-
-
       },
       ...mapMutations({
         setFullScreen: 'SET_FULL_SCREEN'

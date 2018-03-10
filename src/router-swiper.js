@@ -42,8 +42,14 @@ export default function (app, options) {
       var mx_curr = Math.max(0, dx)
       var mx_prev = -parseInt((winw - mx_curr) / 3)
       app.onmove = true
-      app.currTrans = `translateX(${mx_curr}px)`
-      app.prevTrans = `translateX(${mx_prev}px)`
+      if(app.curPath=='/player'){
+        app.currTrans = `translateY(${mx_curr}px)`
+       // app.prevTrans = `translateX(${mx_prev}px)`
+      }else{
+        app.currTrans = `translateX(${mx_curr}px)`
+        app.prevTrans = `translateX(${mx_prev}px)`
+      }
+
     }
     if (dx * dx + dy * dy > 6 * 6) showClass(e0.target, options.hoverClass, false)
   })

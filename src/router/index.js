@@ -63,6 +63,14 @@ export default new Router({
     {
       path: '/words',
       component: Empty
+    },
+    {
+      path: '/t_player',
+      component: Player
+    },
+    {
+      path: '/player',
+      component: Empty
     }
 
   ]

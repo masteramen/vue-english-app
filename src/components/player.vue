@@ -1,13 +1,12 @@
 <template>
-  <page title="detail" >
-    <div slot="navbar"></div>
-    <player-view :title="title" :bg-image="bgImage" :songs="songs"></player-view>
-  </page>
+  <div>
+    <player-view2 :title="title" :bg-image="bgImage" :songs="songs"></player-view2>
+  </div>
 </template>
 
 <script type="text/ecmascript-6">
   import {mapGetters} from 'vuex'
-  import {default as PlayerView} from "./player-view";
+  import {default as PlayerView2} from "./player-view2";
 
   export default {
     computed: {
@@ -18,7 +17,8 @@
         return this.singer.avatar
       },
       ...mapGetters([
-        'singer'
+        'singer',
+        'fullScreen'
       ])
     },
     data() {
@@ -53,7 +53,7 @@
       }
     },
     components: {
-      PlayerView
+      PlayerView2
     }
   }
 </script>

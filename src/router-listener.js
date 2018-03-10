@@ -43,7 +43,7 @@ export default function (app, opts = {}) {
 
   let pathArr = JSON.parse(sessionStorage.pathArr || '[]') // 路由路径本地存储
 
-  app.slides = ['/t_list','/t_detail','/t_settings','/t_subscription','/t_words'].map(x => getSlideItem(x))
+  app.slides = ['/t_list','/t_detail','/t_settings','/t_subscription','/t_words','/t_player'].map(x => getSlideItem(x))
   router.beforeEach((to, from, next) => {
     const fromPath = from.matched[0].path
     const toPath = to.matched[0].path
