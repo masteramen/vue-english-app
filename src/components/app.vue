@@ -4,7 +4,7 @@
   <div :class="{ onmove:onmove, endmove:endmove }" style="position: relative;height:100%;">
     <slot></slot>
 
-    <div :is="item.component" class="page" :id="item.name"   :class="{ show:curPath==item.name,prev:prevPath===item.name,keep:prevPath===item.name&&curPath=='/player',down:item.name=='/player'}"   v-show="item.component!=null"
+    <div :is="item.component" class="page" :id="item.name.replace('/','')"   :class="{ show:curPath==item.name,prev:prevPath===item.name,keep:prevPath===item.name&&curPath=='/player',down:item.name=='/player'}"   v-show="item.component!=null"
 
          :style="prevPath===item.name&&prevTrans?{ [webkit+'transform']: webkit+prevTrans }:(curPath===item.name&&currTrans?{ [webkit+'transform']: webkit+currTrans }:{})"
          v-for="item in slides" ></div>

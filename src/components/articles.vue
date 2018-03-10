@@ -18,10 +18,11 @@
                 <div class="summary">
                   <div class="summaryWrap">
                     <span>{{song.ORG_SITE}}</span> |
-                    <span>{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}}</span> |
-                    <span>{{song.POST_DATE|formatDate}}</span> |
-                    <span>{{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
-                    <i class="icon-success" style="float:right;" v-if="song.TOTAL"></i>
+                    <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
+                    <span>{{song.POST_DATE|formatDate}}</span>
+                    <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
+                    <i v-if="song.AUDIO_URL" :class="{'icon-play':song.AUDIO_URL}" ></i>
+                    <i class="icon-success"  v-if="song.TOTAL"></i>
                   </div>
                 </div>
               </div>
@@ -169,8 +170,11 @@
       ]),
       selectItem(item, index) {
         this.selectCurIndex({index})
+        let path = '/detail'
+        if(item.AUDIO_URL) path = '/player'
+
         this.$router.push({
-          path: `/detail`
+          path: path
         })
         console.log(index)
       },
@@ -276,8 +280,12 @@
             color: #b2b2b2
             .summaryWrap
               .icon-success
-                font-size: 150%
+                font-size: 100%
                 color:green
+                padding-left:10px
+              .icon-play
+                font-size:100%
+                padding-left:10px
               span
                 font-size: 80%
         &.selected

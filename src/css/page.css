@@ -65,7 +65,11 @@ html,body,.wh100{height: 100%;width: 100%;}
 	-webkit-transform: translate(0);
 	transform: translate(0);
 }
-
+.page.keep{
+  -webkit-transform: translate(0);
+  transform: translate(0);
+  opacity: 0.5;
+}
 .page.prev .topmask.show{pointer-events: none;}
 .onmove .page, .page.nomove{
 	-webkit-transition: none;transition: none;
@@ -164,7 +168,7 @@ html,body,.wh100{height: 100%;width: 100%;}
     overflow: hidden;
 }
 
-.words.page.show,.detail.page.show {
+#words,#player,#detail,#setting,#words,#subscription {
   z-index: 1000 !important;
 }
 

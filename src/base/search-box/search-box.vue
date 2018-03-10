@@ -16,7 +16,7 @@
     props: {
       placeholder: {
         type: String,
-        default: '搜索歌曲、歌手'
+        default: '搜索关键字、RSS地址'
       }
     },
     data() {

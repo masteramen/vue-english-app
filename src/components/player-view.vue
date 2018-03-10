@@ -513,11 +513,12 @@
     },
     watch: {
       currentIndex(newIndex, oldIndex) {
+
+        let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
+        if(!currentArticle.AUDIO_URL) return
         this.songReady = false
         this.currentTime = 0
-
         player.pause()
-        let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
 

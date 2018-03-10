@@ -32,7 +32,7 @@ export default function (app, options) {
     if (!startTouch) return
 
     let { pageX, pageY } = getXY(e)
-		// console.log(pageX, pageY)
+		 console.log(pageX, pageY)
     dx = pageX - x0
     dy = pageY - y0
     if (!canMove && Math.abs(dy) > options.cancelMoveDis) cancelMove = true

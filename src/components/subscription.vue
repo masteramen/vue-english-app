@@ -1,5 +1,5 @@
 <template>
-  <page :title="'订阅('+subscriptionList.length+')'" class="subscription" :menuTxt="edit?'取消':'编辑'" @menu="edit=!edit" >
+  <page :title="'订阅('+subscriptionList.length+')'" class="subscription" :menuTxt="edit?'完成':'编辑'" @menu="edit=!edit" >
     <div style="text-align: center;font-size:16px;" @click="rssSearch=true">
       <i class="icon-add" style="font-size:16px;">添加新的订阅</i>
     </div>

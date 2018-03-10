@@ -25,7 +25,7 @@
       <loading v-show="hasMore" title=""></loading>
     </ul>
     <div v-show="!hasMore && !subscriptionList.length" class="no-result-wrapper">
-      <no-result title="抱歉，暂无搜索结果"></no-result>
+      <no-result title="暂无订阅，请点击添加新的订阅"></no-result>
     </div>
   </scroll>
 </template>

@@ -25,7 +25,7 @@
               <p ref="lyricLine"
                  class="text"
                  :class="{'current': currentLyric.curNum-1 ===index}"
-                v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
+                v-html="line.txt" @click="playTime(line.time)">
               </p>
               <lazy-component @show="handlerTS(index,line)" class="text" v-if="reload" >
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
@@ -39,38 +39,6 @@
         <loading :title="loadingTitle"></loading>
       </div>
     </div>
-    <div class="bottom">
-      <div class="dot-wrapper">
-        <span class="dot" :class="{'active': currentShow==='lyric'}"></span>
-        <span class="dot" :class="{'active': currentShow==='cd'}"></span>
-      </div>
-      <div class="progress-wrapper">
-        <span class="time time-l">{{format(currentTime)}}</span>
-        <div class="progress-bar-wrapper">
-          <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
-        </div>
-        <span class="time time-r">{{curArticle.DURATION && format(curArticle.DURATION) || '未知'}}</span>
-      </div>
-      <div class="operators">
-        <div class="icon i-left" @click="changeMode">
-          <i :class="iconMode"></i>
-        </div>
-        <div class="icon i-left" :class="disableCls">
-          <i @click="prev" class="icon-prev"></i>
-        </div>
-        <div class="icon i-center" :class="disableCls">
-          <i @click="togglePlaying" :class="playIcon"></i>
-        </div>
-        <div class="icon i-right" :class="disableCls">
-          <i @click="next" class="icon-next"></i>
-        </div>
-        <div class="icon i-right" :class="lyricFollowCls">
-          <i class="icon-book" @click="toggleLyric"></i>
-        </div>
-      </div>
-    </div>
-    <div ref="audio" :src="curArticle.AUDIO_URL" :title="curArticle.TITLE" @duration="onDuration" @canplay="ready" @error="error" @timeupdate="updateTime" @ended="end"></div>
-    <audio ref="wordAudio" style="display:none;" ></audio>
   </div>
   </div>
 </template>
@@ -94,18 +62,9 @@
     data() {
       return {
         curArticle: createArticle({}),
-        songReady: false,
-        currentTime: 0,
-        duration: 1,
-        radius: 32,
         currentLyric: null,
         currentLineNum: 0,
         currentShow: 'lyric',
-        playingLyric: '',
-        audioUrl: '',
-        lyricFollow: true,
-        needUpdateRemoteControl: true,
-        lastSwipeTime: '',
         showLoading: true,
         loadingTitle: '',
         reload: true,
@@ -117,71 +76,9 @@
       this.touch = {}
     },
     mounted() {
-      getSilent()
 
-      if (this.editMode) {
-        this.$nextTick(() => {
-          touchDir(this.$refs.lyricList.$el, dir => {
-            if (!this.playing) {
-              return
-            }
-            let curNum = this.currentLyric.curNum || 0
-            if (dir === 'down') {
-              curNum = this.currentLineNum - 1
-            } else {
-              curNum = this.currentLineNum + 1
-            }
-
-            console.log(curNum)
-            let elips = +new Date() - (this.currentLyric.startStamp)
-            console.log(`elips:${elips}`)
-
-            if (curNum === undefined || curNum < 0 || !this.currentLyric.lines[curNum ]) return
-            this.currentLyric.lines[curNum ].time = elips
-
-            for (let i = curNum + 1; i < this.currentLyric.lines.length; i++) {
-              this.currentLyric.lines[i].time = 100 * 60 * 1000
-            }
-
-            this.currentLyric.play(elips)
-          })
-        })
-      }
       this.$nextTick(() => {
         this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
-        player.setAudio(this.$refs.audio)
-        let _this = this
-        console.log('bind RemoteCommand position')
-        RemoteCommand.on('position', function(position) {
-          console.log('seek to position:' + position)
-          player.seekTo(position)
-        })
-        document.addEventListener('pause', function(event) {
-          _this.enableOrDisableScreenLock(_this.fullScreen)
-        })
-        document.addEventListener('resume', function(event) {
-          _this.enableOrDisableScreenLock(_this.fullScreen)
-        })
-
-        document.addEventListener('remote-event', function(event) {
-          console.log(event)
-
-          switch (event.remoteEvent.subtype) {
-            case 'nextTrack':
-              _this.next()
-              break
-            case 'prevTrack':
-              _this.prev()
-              break
-            case 'pause':
-            case 'play':
-            case 'playpause':
-              console.log('togglePlaying')
-              _this.togglePlaying()
-              break
-
-          }
-        })
 
         let that = this
         $('.lyric-wrapper').on('click', 'span', function() {
@@ -212,27 +109,6 @@
       })
     },
     computed: {
-      cdCls() {
-        return this.playing ? 'play' : 'play pause'
-      },
-      playIcon() {
-        return this.playing ? 'icon-pause' : 'icon-play'
-      },
-      miniIcon() {
-        return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
-      },
-      disableCls() {
-        return ''
-      },
-      lyricFollowCls() {
-        return this.lyricFollow ? '' : 'not-lyricFollow'
-      },
-      percent() {
-        return this.currentTime / this.curArticle.DURATION
-      },
-      iconMode() {
-        return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
-      },
       ...mapGetters([
         'fullScreen',
         'playlist',
@@ -249,202 +125,17 @@
           this.trlines.splice(index, 1, result)
         })
       },
-      lyricPan(e) {
-        console.log(e)
-      },
-      lyricTouchStart(e) {
-        const touch = e.touches[0]
-        this.touch.startY = touch.pageY
-      },
-      lyricTouchEnd(e) {
-        const touch = e.touches[0]
-        this.touch.direction = touch.pageY - this.touch.startY
-        console.log(this.touch.direction)
-      },
-      scrollLyricEnd(pos) {
-        if (!this.playing) {
-          return
-        }
-        console.log('here')
-        let lineNum = (this.currentLyric.curNum || 1) - 1
-        let curLine = this.$refs.lyricLine[lineNum]
-
-        if (this.lyricFollow) {
-          if ($(curLine).offset().top < $('.middle').offset().top ||
-            $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()
-          ) {
-            this.$refs.lyricList.scrollToElement(curLine, 1000)
-          }
-        }
-      },
       back() {
-        this.setFullScreen(false)
         this.$router.back()
-      },
-      open() {
-        this.setFullScreen(true)
-      },
-      enableOrDisableScreenLock(value) {
-        if (value) {
-          console.log('keep awake')
-          window.plugins.insomnia.keepAwake()
-        } else {
-          console.log('keep allowSleepAgain')
-          window.plugins.insomnia.allowSleepAgain()
-        }
       },
       togglePlaying() {
         this.setPlayingState(!this.playing)
-      },
-      toggleLyric() {
-        this.lyricFollow = !this.lyricFollow
-      },
-      end() {
-        if (!this.editMode) {
-          if (this.mode === playMode.loop) {
-            this.loop()
-          } else {
-            this.next()
-          }
-        } else {
-          this.togglePlaying()
-        }
-      },
-      onDuration(e) {
-        this.curArticle.DURATION = e.detail
-        console.log(this.curArticle)
-        update(this.curArticle)
-      },
-      loop() {
-        this.currentTime = 0
-        player.play(null, 0)
-        if (this.currentLyric) {
-          this.currentLyric.seek(0)
-        }
-      },
-      next() {
-        if (this.playlist.length === 1) {
-          this.loop()
-        } else {
-          let index = this.currentIndex + 1
-          if (index === this.playlist.length) {
-            index = 0
-          }
-
-          this.setCurrentIndex(index)
-        }
-      },
-      prev() {
-        console.log('prev')
-        if (this.playlist.length === 1) {
-          this.loop()
-        } else {
-          let index = this.currentIndex - 1
-          if (index === -1) {
-            index = this.playlist.length - 1
-          }
-          this.setCurrentIndex(index)
-        }
-      },
-      ready() {
-        console.log('ready....')
-        this.songReady = true
-      },
-      error() {
-        console.log('error')
-        // this.songReady = true
-        this.next()
-        // this.togglePlaying()
-      },
-      updateTime(e) {
-        this.currentTime = e.target.currentTime
-        if (device.platform == 'iOS' && window.remoteControls && this.needUpdateRemoteControl) {
-          setTimeout(() => {
-            let params = ['artist', this.curArticle.TITLE, 'album', this.curArticle.IMG_URL, this.curArticle.DURATION, this.currentTime]
-
-            window.remoteControls.updateMetas(success => {
-              this.needUpdateRemoteControl = false
-            }, fail => {
-              console.log(fail)
-            }, params)
-          }, 10)
-        }
-      },
-      format(interval) {
-        interval = interval | 0
-        const minute = interval / 60 | 0
-        const second = this._fullZero(interval % 60)
-        return `${minute}:${second}`
-      },
-      onProgressBarChange(percent) {
-        let currentTime = this.curArticle.DURATION * percent
-        player.seekTo(currentTime)
-        if (this.currentLyric) {
-          this.currentLyric.seek(currentTime * 1000)
-          if (!this.playing) {
-            this.currentLyric.togglePlay()
-          }
-        }
-      },
-      playTime(interval) {
-        console.log(new Date())
-        if (this.clickTimer) {
-          player.seekTo(interval / 1000)
-          // player.play(this.curArticle.AUDIO_URL, interval / 1000)
-          if (this.currentLyric) {
-            this.currentLyric.seek(interval)
-          }
-        } else {
-          this.clickTimer = setTimeout(() => {
-            clearTimeout(this.clickTimer)
-            this.clickTimer = false
-          }, 400)
-        }
-      },
-      changeMode() {
-        const mode = (this.mode + 1) % 3
-        this.setPlayMode(mode)
-      },
-      resetCurrentIndex(list) {
-        let index = list.findIndex((item) => {
-          return item.id === this.curArticle.id
-        })
-        this.setCurrentIndex(index)
-      },
-      getAudio() {
-        if (!this.songReady) {
-          this.loadingTitle = '正在加载音频'
-          let id = this.curArticle.ID
-          this.curArticle.getAudio(progressEvt => {
-            if (this.curArticle.ID === id) {
-              if (progressEvt.lengthComputable) {
-                let percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
-                this.loadingTitle = `正在加载音频 ${percent}%`
-              }
-            }
-          }).then(audioUrl => {
-            console.log('download audioUrl Success')
-            this.songReady = true
-            this.loadingTitle = ''
-          }).catch(err => {
-            console.log(err)
-            if (err && err.desc) {
-              this.loadingTitle = `加载音频发生错误 :${err.desc}`
-            }
-            if (!err || err.code != 0) {
-              setTimeout(_ => {
-                this.error()
-              }, 3000)
-            }
-          })
-        }
       },
       getLyric: function () {
         this.loadingTitle = '正在加载内容'
         let id = this.curArticle.ID
         return this.curArticle.getLyric()
           .then(({lines, lyric}) => {
-            console.log(lines)
             if (id !== this.curArticle.ID) return
             this.lines = lines
             this.trlines = [...Array(lines.length)].map((_, i) => false)
@@ -500,12 +191,7 @@
         }
       },
       ...mapMutations({
-        setFullScreen: 'SET_FULL_SCREEN',
-        setPlayingState: 'SET_PLAYING_STATE',
-        setCurrentIndex: 'SET_CURRENT_INDEX',
-        setPlayMode: 'SET_PLAY_MODE',
-        setPlaylist: 'SET_PLAYLIST',
-        setEditMode: 'SET_EDIT_MODE'
+        setPlayingState: 'SET_PLAYING_STATE'
       }),
       ...mapActions([
         'savePlayHistory'
@@ -513,59 +199,16 @@
     },
     watch: {
       currentIndex(newIndex, oldIndex) {
-        this.songReady = false
-        this.currentTime = 0
 
-        player.pause()
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
+        if(currentArticle.AUDIO_URL) return
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
-
-
         if (this.currentLyric) {
           // this.currentLyric.seek(0)
           this.currentLyric.stop()
         }
-
-        getSilent().then(url => {
-          player.loopplay(url)
-        })
-
-        this.getLyric().then(() => {
-          if (this.playing) {
-            this.loadingTitle = '正在加载音频'
-            this.getAudio()
-          }
-        })
-      },
-      songReady(value) {
-        if (value) {
-          if (this.playing) {
-            this.curArticle.getAudio().then(url => {
-              player.play(url, this.currentTime)
-              if (this.currentLyric) this.currentLyric.play(this.currentTime)
-            })
-          }
-        } else {
-          player.pause()
-          if (this.currentLyric) this.currentLyric.stop()
-        }
-      },
-      playing(newPlaying) {
-        if (newPlaying) {
-          if (this.songReady) {
-            newPlaying ? player.play() : player.pause()
-            this.currentLyric.togglePlay()
-          } else {
-            this.getAudio()
-          }
-        } else {
-          player.pause()
-          if (this.currentLyric) this.currentLyric.stop()
-        }
-      },
-      fullScreen(value) {
-        this.enableOrDisableScreenLock(value)
+        this.getLyric()
       }
 
     },
@@ -607,6 +250,7 @@
         z-index: -1
         opacity: 0.6
         filter: blur(20px)
+        padding:20px
       .top
         position: relative
         //background: $color-background
@@ -638,7 +282,7 @@
         position: absolute
         width: 100%
         top: 50px
-        bottom: 130px
+        bottom: 10px
         white-space: nowrap
         font-size: 0
         .loading-container

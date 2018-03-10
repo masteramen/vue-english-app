@@ -9,10 +9,11 @@ let options = {
   androidCanDrag: false // 安卓默认不支持手势滑动
 }
 const sysOptions = {
-  startMoveDis: 10, // 手势滑动最小可以开始移动的距离
+  startMoveDis: 30, // 手势滑动最小可以开始移动的距离
   defmoveDure: 260, // 这里设置了比页面切换间隔时间大40ms，保证回退时显示完整的页面切换动画
   endmoveDure: 100, // 手势滑动松开之后页面切换时间是100ms
-  cancelMoveDis: 20 // 垂直方向滑动这个距离之后取消识别页面滑动
+  cancelMoveDis: 20, // 垂直方向滑动这个距离之后取消识别页面滑动
+
 }
 
 export default function (app, opts = {}) {

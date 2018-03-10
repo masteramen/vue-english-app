@@ -91,6 +91,7 @@ export function downloadAllArticles(articles) {
     }, article).then(() => {
       console.log(`download artile ${article.ID}  ok`)
     }).catch(err => {
+      console.log(err)
       console.log(`dowload article ${article.ID} fail.`)
     })
   })
@@ -173,7 +174,7 @@ export class Article {
     }
     if (translate) {
       for (let index = 0; index < lines.length; index++) {
-        await tr(lines, index)
+        await this.tr(lines, index)
       }
     }
 

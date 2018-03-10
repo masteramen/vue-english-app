@@ -9,7 +9,7 @@
 
 <script type="text/ecmascript-6">
   import {mapGetters} from 'vuex'
-  import {default as PlayerView} from "./player-view";
+  import {default as PlayerView} from "./content-view";
 
   export default {
     computed: {
