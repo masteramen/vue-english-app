@@ -1,10 +1,10 @@
 <template>
-  <transition name="normal">
-  <page title="detail" >
+
+  <page title="detail"  class="detail">
     <div slot="navbar"></div>
     <player-view :title="title" :bg-image="bgImage" :songs="songs"></player-view>
   </page>
-  </transition>
+
 </template>
 
 <script type="text/ecmascript-6">

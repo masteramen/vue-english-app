@@ -161,3 +161,7 @@ html,body,.wh100{height: 100%;width: 100%;}
     min-height: 100%;
     overflow: hidden;
 }
+
+.words.page.show,.detail.page.show {
+  z-index: 1000 !important;
+}

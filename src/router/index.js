@@ -19,20 +19,32 @@ export default new Router({
       redirect: '/list'
     },
     {
-      path: '/settings',
+      path: '/t_list',
+      component: Articles
+    },
+    {
+      path: '/list',
+      component: Empty
+    },
+    {
+      path: '/t_settings',
       component: Settings
     },
     {
-      path: '/t_list',
-      component: Articles
+      path: '/settings',
+      component: Empty
     },
     {
       path: '/t_detail',
       component: Detail
     },
     {
+      path: '/detail',
+      component: Empty
+    },
+    {
       path: '/subscription',
-      component: Subscription,
+      component: Empty,
       children: [
         {
           path: '/subscription/search',
@@ -41,16 +53,16 @@ export default new Router({
       ]
     },
     {
-      path: '/list',
-      component: Empty
+      path: '/t_subscription',
+      component: Subscription
     },
     {
-      path: '/detail',
-      component: Detail
+      path: '/t_words',
+      component: Words
     },
     {
       path: '/words',
-      component: Words
+      component: Empty
     }
 
   ]

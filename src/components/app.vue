@@ -35,13 +35,6 @@
   <!--  <component class="page show" :class="{ prev:isPrev }" :is="prevPage" v-if="prevPage!=null"
                :style="prevTrans?{ [webkit+'transform']: webkit+prevTrans }:{}" ></component>-->
     <!-- 当前页 -->
-    <transition :name ="curPath=='/detail'?'normal':'slide'">
-    <keep-alive>
-    <router-view style="z-index:1" class="page" :class="{ show:isShow && curPath!=='/list', goback:goback }" ref="page"
-                 :style="currTrans?{ [webkit+'transform']: webkit+currTrans }:{}"></router-view>
-
-    </keep-alive>
-    </transition>
     <article-player></article-player>
   </div>
   </div>
