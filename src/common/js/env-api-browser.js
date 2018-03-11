@@ -5,8 +5,7 @@ const axios = require('axios')
 import dbDdl from 'common/js/db-ddl'
 
 export function interceptUrl(url) {
-  //console.log(url)
-  //if(true)return `http://192.168.1.126:8080/api/url?url=${encodeURIComponent(url)}`;
+
   if (window.device.platform === 'browser' && url.indexOf('http') === 0) {
     return location.protocol + '//' + location.host + `/api/url?url=${encodeURIComponent(url)}`
   }
@@ -34,16 +33,19 @@ webdb.transaction(function (tx) {
 
 export function run(sql, ...params) {
   console.log(sql)
+  console.log(params)
   let errorHaneler = err => {
     console.log(err)
   }
   if (params && typeof (params[params.length - 1]) === 'function') {
     errorHaneler = params.pop()
+    console.log(errorHaneler)
   }
-  console.log(params)
+
   webdb.transaction(function (tx) {
     tx.executeSql(sql, params, function (tx, result) {
       console.log(result)
+      errorHaneler()
     }, function (tx, error) {
       errorHaneler(error)
     })
@@ -108,6 +110,39 @@ export function getLatestArticles() {
       }, function (tx, error) {
         console.log(error)
         reject(error)
+      })
+    })
+  })
+}
+
+export function getOldArticlesAndMarkDelete(time) {
+
+  return new Promise((resolve, reject) => {
+    webdb.transaction(function (tx) {
+      let sql = `UPDATE T_ARTICLE SET STATUS = 'D' WHERE POST_DATE< ${time} AND STATUS='A'`
+
+      tx.executeSql(sql, [], function (tx, results) {
+
+        resolve()
+      }, function (tx, error) {
+        reject(error)
+      })
+    })
+  }).then(() => {
+    return new Promise((resolve, reject) => {
+      webdb.transaction(function (tx) {
+        let sql = `SELECT * FROM  T_ARTICLE WHERE STATUS='D' AND POST_DATE< ${time} ORDER BY POST_DATE DESC`
+
+        tx.executeSql(sql, [], function (tx, results) {
+          var contents = []
+          for (let i = 0; i < results.rows.length; i++) {
+            contents.push(results.rows.item(i))
+          }
+          resolve({'code': 0, 'contents': contents})
+        }, function (tx, error) {
+          console.log(error)
+          reject(error)
+        })
       })
     })
   })

@@ -85,7 +85,7 @@ let downLoadQueue = new Queue(1)
 export function downloadAllArticles(articles) {
   articles.forEach(article => {
     downLoadQueue.add(function () {
-      return article.getLyric(true).then(()=>{
+      return article.getLyric(true).then(() => {
         return article.tsTitle()
       }).then(() => {
         return article.getAudio()
@@ -101,10 +101,14 @@ export function downloadAllArticles(articles) {
 
 export function getLatestArticles() {
   return envApi.getLatestArticles()
+  // return Promise.reject()
 }
 
-export function fetchLatest() {
-  return runAll()
+export async function fetchLatest() {
+  let time = new Date().getTime() - 24 * 3600 * configProvider.getConfig().nDay
+  await envApi.getOldArticlesAndMarkDelete(time)
+  console.log('done getOldArticlesAndMarkDelete...')
+  await runAll()
 }
 
 function formate2Lyric(detailObj) {
@@ -126,7 +130,7 @@ function formate2Lyric(detailObj) {
   let fixnum = n => {
     return (Array(2).join('0') + n).slice(-2)
   }
-  let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/).filter(n=>n.trim())
+  let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/).filter(n => n.trim())
 
   return (async () => {
     let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
@@ -158,7 +162,7 @@ export class Article {
       this[k] = data[k]
     }
   }
-  async tsTitle(){
+  async tsTitle() {
     let dict = await ts.translateWithAudio(this.TITLE)
     this.TITLE_CN = dict.result[0]
     await dataManager.update(this)

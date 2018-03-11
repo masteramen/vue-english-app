@@ -1,39 +1,15 @@
-/* const headers = {
-  'referer': 'https://www.google.com/',
-  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
-  'Connection': 'close'
-};
-
-return (async ()=>{
-
-  let subscriptList = loadSubscriptionList()
-
-  for (let item of subscriptList)
-  {
-    let rssUrl = item.feedId.substring(5)
-    const data = Object.assign({}, {}, {})
-    await  axios.get(rssUrl, {
-      params: data,
-      headers: headers
-    }).then(resp => {
-      console.log(resp.data)
-    })
-  }
-
-  return Promise.reject(0)
-})() */
-import {loadSubscriptionList} from 'common/js/cache'
 import tld from 'tldjs'
-
+const $ = require('jquery')
+import axios from 'axios'
+import {commonParams} from "../../../api/config";
+const rssFeedId = 'rss:'
 function unescape(str) {
   var elem = document.createElement('div')
   elem.innerHTML = str
   return elem.innerText || elem.textContent
 }
-
-window.configJobs = window.configJobs || []
-window.configJobs.push(function ($, urllib, dataManager) {
-  function getItems(feedId, response) {
+export const rss = {
+  getItems: function(feedId, response) {
     let results = []
 
     $($.parseXML(response.data)).find('item').each(function () {
@@ -48,7 +24,7 @@ window.configJobs.push(function ($, urllib, dataManager) {
         'REFERER': absUrl,
         'ORG_SITE': domain,
         'TITLE': unescape(text),
-        'FEED_ID': feedId,
+        'FEED_ID': rssFeedId + feedId,
         'POST_TIME': pubDate.getTime(),
         'IMG_URL': thumbnail
       }
@@ -56,19 +32,19 @@ window.configJobs.push(function ($, urllib, dataManager) {
     })
 
     return results
-  }
+  },
 
-  function getDetail(response, detail) {
+  getDetail: function (response, detail) {
     let result = Object.assign(detail, {
       'response': response
     })
 
     result.CONTENT = $('div[property=articleBody] > p', response.data).toArray()/* .filter(x=>$(x).find('a').length===0) */.map(x => $(x).text()).join('\n').replace(/\n+/g, '\n')
-    console.log(result)
 
     return result
-  }
-  function url2io(detailObj) {
+  },
+  url2io2: function (detailObj) {
+
     return new Promise((resolve, reject) => {
       $.ajax({
         'type': 'get',
@@ -81,23 +57,26 @@ window.configJobs.push(function ($, urllib, dataManager) {
         },
         'success': function(data) {
           detailObj.CONTENT = $(data.content).find('p').toArray().map(e => $(e).text()).join('\n')
-          console.info(data)
           resolve(detailObj)
         }
       })
     })
-  }
-  let subscriptList = loadSubscriptionList()
-  for (let item of subscriptList) {
-    console.log(item)
-    dataManager.addConfig(
-      {
-        feedId: item.feedId,
-        getItems: getItems,
-        getDetail: getDetail,
-        url2io: url2io
-      }
-    )
-  }
-})
+  },
+  url2io:function(detailObj){
+    var feed = `https://www.freefullrss.com/feed.php?url=${encodeURIComponent(`http://www.jfox.info/rss.php?title=test&link=${encodeURIComponent(detailObj.REFERER)}`)}&max=1&links=preserve&exc=&submit=Create+Full+Text+RSS`;
+
+    return axios.get(feed, {}).then((res) => {
+        $($.parseXML(res.data)).find('item').each(function () {
+          var el = $(this);
+          console.log("------------------------");
+          console.log("title      : " + el.find("title").text());
+          console.log("link       : " + el.find("link").text());
+          console.log("description: " + el.find("description").text());
+          detailObj.CONTENT = $(el.find("description").text()).text()
+          return detailObj
+        })
+    })
+  },
+  feedId:rssFeedId
+}
 

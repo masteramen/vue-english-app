@@ -1,3 +1,5 @@
+import {loadSubscriptionList} from 'common/js/cache'
+import {rss} from './data-provider/rss'
 const urllib = require('url')
 const Queue = require('promise-queue')
 var queue = new Queue(1, Infinity)
@@ -5,16 +7,20 @@ const axios = require('axios')
 const dbDDL = require('./db-ddl')
 const $ = require('jquery')
 const db = require('./env-api')
-
+const jobConfigs = []
 db.run(dbDDL.ddl)
 db.run(dbDDL.dictDDL)
 function update(detail) {
-  db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
+  console.log(detail)
+  return new Promise((resolve, reject) => {
+    db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
       detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '',
-       detail.LRC_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.REFERER || ''
+      detail.LRC_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.REFERER || ''
       , err => {
         console.log(err)
+        resolve()
       })
+  })
 }
 
 function insert(DETAIL) {
@@ -33,34 +39,23 @@ function insert(DETAIL) {
   })
 }
 
-function getList(theurl, extractLinks) {
-  return queue.add(() => getResponse(theurl).then((response) => {
-    let results = extractLinks(response)
-    for (let detailObj of results) {
-      queue.add(function () {
-        return isExist(detailObj).then(row => {
-          if (row && row.ID) {
-            return row
-          } else {
-            insert(detailObj).then(detailObj => {
-              return detailObj
-            })
-          }
-        })
-      })
+async function getList(theurl, results) {
+  for (let detailObj of results) {
+    try {
+      console.log(detailObj)
+      let row = await isExist(detailObj)
+      if (row && row.ID) continue
+      await insert(detailObj)
+    } catch (e) {
+      console.log(e)
     }
-    queue.add(function () {
-      return Promise.resolve()
-    })
-  }).catch((e) => {
-    console.log(e)
-  }))
+  }
 }
 
 function isExist(DETAIL) {
   return new Promise((resolve, reject) => {
-    let sql = `SELECT * FROM T_ARTICLE WHERE REFERER='${DETAIL.REFERER}'`
-
+    let sql = `SELECT *,count(1) as c FROM T_ARTICLE WHERE REFERER='${DETAIL.REFERER} group by REFERER'`
+    console.log(sql)
     db.all(sql, (error, rows) => {
       if (error || rows.length === 0) {
         console.log(error)
@@ -68,8 +63,6 @@ function isExist(DETAIL) {
       }
       return resolve(rows[0])
     })
-  }).catch(err => {
-    console.log(err)
   })
 }
 
@@ -84,23 +77,6 @@ function getResponse(url) {
 
 function getContentLen(detail) {
   return new Promise((resolve, reject) => {
-      /*
-      let r = request({
-        url: detail.audioUrl,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
-          'Referer': detail.url
-        }
-      })
-
-      r.on('response', response => {
-        const contentLength = response.headers['content-length'];
-        const contentType = response.headers['content-type'];
-
-        r.abort();
-        resolve(contentLength)
-      });
-      */
     resolve(0)
   }).catch(err => {
     console.log(err)
@@ -109,6 +85,7 @@ function getContentLen(detail) {
 
 async function getDetailPage(detailObj, item) {
   try {
+    console.log(detailObj)
     if (item.url2io) {
       await item.url2io(detailObj)
     } else {
@@ -121,17 +98,6 @@ async function getDetailPage(detailObj, item) {
   } catch (e) {
     console.log(e)
   }
-  if (!detailObj.CONTENT || !detailObj.CONTENT.trim()) {
-    let response = await getResponse(detailObj.REFERER)
-    let maxP = null
-    $(response.data).find('p').parent().toArray().forEach(pp => {
-      if (!maxP)maxP = pp
-      else if ($(maxP).find('p').length < $(pp).find('p').length)maxP = pp
-    })
-
-    if (maxP && $(maxP).find('p').length > 0) detailObj.CONTENT = $(maxP).find('p').toArray().map(p => $(p).text()).join('\n')
-  }
-  return detailObj
 }
 
 function getArticlesBasicInfo(lastTime) {
@@ -148,36 +114,40 @@ function getArticlesBasicInfo(lastTime) {
 
 function findById(id) {
   return new Promise((resolve, reject) => {
-    console.log('select ...')
     db.each('SELECT *  FROM t_article where id=?', id, function(err, row) {
-      console.log(err)
-        // console.log(row)
-
       return resolve(row)
     })
   })
 }
-
-const jobConfigs = []
-
 async function runJobs() {
-  for (let item of jobConfigs) {
-    await getList(item.feedId, response => {
-      return item.getItems(item.feedId, response)
-    })
+  let subscriptList = loadSubscriptionList()
+  for (let item of subscriptList) {
+    let response = await getResponse(item.feedId)
+    console.log(rss)
+    console.log(item.feedId)
+    console.log(response)
+    let results = rss.getItems(item.feedId, response)
+    await getList(item.feedId, results)
   }
 }
-function getDetail(detailObj) {
-  for (let item of jobConfigs) {
-    if (detailObj.FEED_ID === item.feedId) {
-      return queue.add(function () {
-        return getDetailPage(detailObj, item).then(detailObj => {
-          update(detailObj)
-          return detailObj
-        })
-      })
+async function getDetail(detailObj) {
+  let feedEngineer = null
+  if (detailObj.FEED_ID.indexOf(rss.feedId) === 0) {
+    feedEngineer = rss
+  } else {
+    for (let item of jobConfigs) {
+      if (detailObj.FEED_ID === item.feedId) {
+        feedEngineer = item
+        break
+      }
     }
   }
+  if (feedEngineer) {
+    await getDetailPage(detailObj, feedEngineer)
+    console.log(detailObj)
+    await update(detailObj)
+  }
+  return detailObj
 }
 function addConfig(config) {
   jobConfigs.push(config)

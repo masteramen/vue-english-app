@@ -4,7 +4,7 @@ import axios from 'axios'
 export function getHotKey() {
 
   //return jsonp(url, data, options)
-  return null
+  return Promise.resolve({})
 }
 
 export function search(query, page, zhida, perpage) {

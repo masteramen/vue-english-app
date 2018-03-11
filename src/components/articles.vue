@@ -5,7 +5,7 @@
 
       <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
         <div>
-          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
+          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-45px;text-align:center;color:#999;padding-top:10px;padding-bottom:10px;"><div>{{pullDownTip}}</div><div v-if="lastFetchTime">上次刷新：{{lastFetchTime|formatDate2}} </div></div>
           <ul>
             <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
               <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
@@ -131,28 +131,15 @@
       pulldownRefreshDataList() {
         fetchLatest()
           .then(contents => {
-            // return contents.length
-            console.log('resolve2 ....')
+            this.lastFetchTime = new Date().getTime()
             return this._getLatestArticles()
-          })/*
-          .then((count, lastTime) => {
-            this.lastFetchTime = lastTime
-            if (count <= 0) this.pullDownTip = '已经是最新的了'
-            else {
-              this._getLatestArticles()
-            }
-          }) */.then(() => {
+          }).then(() => {
             this.$refs.toplist.forceUpdate(true)
-          })
-          .catch(err => {
-            console.log('error')
-            console.log(err)
           })
       },
 
       _getLatestArticles() {
         getLatestArticles().then((res) => {
-          console.log(res)
           if (res.contents) {
             let ret = []
             res.contents.forEach(item => {
@@ -162,10 +149,7 @@
             window.sequenceList = ret
             window.randomList = shuffle(Array(ret.length).fill(0).map((v, i) => i))
           }
-          console.log(this.songs)
         }).catch(e => {
-          console.log('catch error:')
-
           console.log(e)
         })
       },
