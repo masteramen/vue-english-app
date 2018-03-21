@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS t_article(
    AUTHOR        TEXT ,
    POST_DATE  TEXT,
    STATUS  TEXT DEFAULT 'A',
-   FEED_ID    TEXT
+   FEED_ID    TEXT,
+   FEED_TYPE    TEXT
 )
 `
 const dictDDL = `

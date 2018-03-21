@@ -1,20 +1,25 @@
 <template>
     <div class="_cover-top">
         <div class="other">
-            <span class="icon-more icon" v-show="$route.path==='/list'" @click.stop="tap()"></span>
-            <ul class="tips-menu" :class="tips_isOpen?'tips-open':'tips-close'">
+            <span :class="downloadAllIcon" class="icon" v-show="$route.path==='/list'" @click.stop="tap()">
+
+            </span>
+
+
+<!--            <ul class="tips-menu" :class="tips_isOpen?'tips-open':'tips-close'">
                 <li v-for="(item ,index) in menuArr" @touchend="selectItem(item,index)" >
 
                     <span class="iconfont" :class="item.iconClass"></span>
                     <div v-text="item.text"></div>
                 </li>
             </ul>
-            <div class="tips-masker" v-show="tips_isOpen"></div>
+            <div class="tips-masker" v-show="tips_isOpen"></div>-->
         </div>
     </div>
 </template>
 <script>
 import Bus from 'common/js/bus'
+import {mapActions, mapGetters} from 'vuex'
 export default {
 
     data() {
@@ -39,14 +44,26 @@ export default {
     },
     methods: {
         tap() {
-            event.stopPropagation();
-            this.tips_isOpen = !this.tips_isOpen
+/*            event.stopPropagation();
+            this.tips_isOpen = !this.tips_isOpen*/
+          //this.selectItem(this.menuArr[0]);
+          this.toggleDownloadAll()
         },
       selectItem(item,index){
         Bus.$emit(item.name);
-      }
-
-    }
+      },
+      ...mapActions([
+        'toggleDownloadAll'
+      ])
+    },
+  computed:{
+    downloadAllIcon(){
+      return this.downloadAll?'icon-stop':'icon-download3'
+    },
+  ...mapGetters([
+    'downloadAll'
+  ])
+  }
 }
 </script>
 <style scoped>

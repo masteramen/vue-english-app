@@ -25,9 +25,9 @@ function update(detail) {
 
 function insert(DETAIL) {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,LRC_URL,POST_DATE,AUTHOR,TOTAL,FEED_ID) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,LRC_URL,POST_DATE,AUTHOR,TOTAL,FEED_ID,FEED_TYPE) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
       DETAIL.TITLE || '', DETAIL.CONTENT || '', DETAIL.AUDIO_URL || '', DETAIL.IMG_URL || '', DETAIL.ORG_SITE || '',
-      DETAIL.REFERER || '', DETAIL.LRC_URL || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID
+      DETAIL.REFERER || '', DETAIL.LRC_URL || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID, DETAIL.FEED_TYPE
       , err => {
         console.log(err)
         if (err) {
@@ -40,12 +40,12 @@ function insert(DETAIL) {
 }
 
 async function getList(theurl, results) {
+  let time = new Date().getTime() - 86400000 * getConfigProvider().getConfig().nDay
   for (let detailObj of results) {
     try {
-      console.log(detailObj)
       let row = await isExist(detailObj)
       if (row && row.ID) continue
-      await insert(detailObj)
+      if (detailObj.POST_TIME > time) await insert(detailObj)
     } catch (e) {
       console.log(e)
     }
@@ -84,8 +84,7 @@ function getContentLen(detail) {
 }
 
 async function getDetailPage(detailObj, item) {
-  try {
-    console.log(detailObj)
+
     if (item.url2io) {
       await item.url2io(detailObj)
     } else {
@@ -95,9 +94,7 @@ async function getDetailPage(detailObj, item) {
       let totalBytes = await getContentLen(detailObj)
       detailObj.TOTAL = totalBytes
     }
-  } catch (e) {
-    console.log(e)
-  }
+
 }
 
 function getArticlesBasicInfo(lastTime) {
@@ -120,13 +117,12 @@ function findById(id) {
   })
 }
 async function runJobs() {
-  let subscriptList = loadSubscriptionList()
+  let subscriptList = loadSubscriptionList().filter(e=>e.enable)
+
   for (let item of subscriptList) {
     let response = await getResponse(item.feedId)
-    console.log(rss)
-    console.log(item.feedId)
-    console.log(response)
-    let results = rss.getItems(item.feedId, response)
+
+    let results = rss.getItems(item, response)
     await getList(item.feedId, results)
   }
 }

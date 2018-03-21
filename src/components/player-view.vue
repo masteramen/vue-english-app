@@ -16,16 +16,15 @@
     <div class="middle" ref="middle">
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
-          <p class="cover"><img :src="curArticle.IMG_URL" style="max-width:100%;"/></p>
-
-          <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
-          <p>{{curArticle.TITLE_CN}}</p>
+          <p class="cover"><img v-if="curArticle.IMG_URL" v-lazy="curArticle.IMG_URL" style="max-width:100%;margin-left:50%;transform: translateX(-50%);"/></p>
+          <p class="text">{{curArticle.TITLE}}</p>
+          <p class="text">{{curArticle.TITLE_CN}}</p>
           <div v-if="currentLyric" >
             <div  v-for="(line,index) in currentLyric.lines" >
               <p ref="lyricLine"
                  class="text"
                  :class="{'current': currentLyric.curNum-1 ===index}"
-                v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
+                v-html="line.txt" @click="playTime(line.time)">
               </p>
               <lazy-component @show="handlerTS(index,line)" class="text" v-if="reload" >
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
@@ -96,14 +95,14 @@
         curArticle: createArticle({}),
         songReady: false,
         currentTime: 0,
-        duration: 1,
+        duration: 0,
         radius: 32,
         currentLyric: null,
         currentLineNum: 0,
         currentShow: 'lyric',
         playingLyric: '',
         audioUrl: '',
-        lyricFollow: true,
+        lyricFollow: false,
         needUpdateRemoteControl: true,
         lastSwipeTime: '',
         showLoading: true,
@@ -184,12 +183,17 @@
         })
 
         let that = this
-        $('.lyric-wrapper').on('click', 'span', function() {
-          $(this).toggleClass('mark')
-          if ($(this).hasClass('mark')) {
+        $(this.$refs.lyricList.$el).on('click', 'span', function() {
+          if (!$(this).data('mark')) {
+            $(this).addClass('mark')
+            $(this).data('mark',true)
+            $(this).find('b').remove()
             getDict($(this).text().trim()).then(result => {
-              let html = $(this).html()
+
+              let html = $(this).html().trim()
+
               $(this).html(`${html}<b>(${result.result})</b>`)
+
               // alert(result.audio)
               // that.$refs.wordAudio.src = result.audio
               let playing = that.playing
@@ -197,16 +201,15 @@
                 that.togglePlaying()
               }
 
-              let onerror = function() {
+              let onerror = ()=> {
                 if (playing) {
                   that.togglePlaying()
                 }
+                $(this).data('mark',false)
               }
               player.tmpPlay(result.audio, onerror, onerror)
               // that.$refs.wordAudio.play()
             })
-          } else {
-            $(this).find('b').remove()
           }
         })
       })
@@ -222,7 +225,7 @@
         return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
       },
       disableCls() {
-        return ''
+        return !this.curArticle.AUDIO_URL
       },
       lyricFollowCls() {
         return this.lyricFollow ? '' : 'not-lyricFollow'
@@ -245,7 +248,7 @@
     },
     methods: {
       handlerTS (index, line) {
-        this.curArticle.tr(this.lines, index).then(result => {
+        this.curArticle.translate(this.lines, index).then(result => {
           this.trlines.splice(index, 1, result)
         })
       },
@@ -265,7 +268,6 @@
         if (!this.playing) {
           return
         }
-        console.log('here')
         let lineNum = (this.currentLyric.curNum || 1) - 1
         let curLine = this.$refs.lyricLine[lineNum]
 
@@ -311,9 +313,13 @@
         }
       },
       onDuration(e) {
+        if(!this.curArticle.DURATION){
+          this.getLyric()
+        }
         this.curArticle.DURATION = e.detail
         console.log(this.curArticle)
-        update(this.curArticle)
+        //update(this.curArticle)
+
       },
       loop() {
         this.currentTime = 0
@@ -513,7 +519,7 @@
     watch: {
       currentIndex(newIndex, oldIndex) {
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
-        if (!currentArticle.AUDIO_URL) return
+        if (!currentArticle.isAudio()) return
         this.songReady = false
         this.currentTime = 0
         player.pause()
@@ -564,6 +570,12 @@
         }
       },
       fullScreen(value) {
+        if(this.currentIndex<0){
+          let index = window.sequenceList.findIndex((item) => {
+            return item.isAudio()
+          })
+          this.setCurrentIndex(index)
+        }
         this.enableOrDisableScreenLock(value)
       }
 
@@ -580,6 +592,12 @@
 </script>
 <style>
   .mark{color:red}
+  .mark::before{
+
+  }
+  .mark::after{
+
+  }
 </style>
 <style  scoped lang="stylus" rel="stylesheet/stylus">
   @import "~common/stylus/variable"

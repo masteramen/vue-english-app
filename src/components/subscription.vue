@@ -1,8 +1,8 @@
 <template>
-  <page :title="'订阅('+subscriptionList.length+')'" class="subscription" :menuTxt="edit?'完成':'编辑'" @menu="edit=!edit" >
-    <div style="text-align: center;font-size:16px;" @click="rssSearch=true">
+  <page :title="'订阅('+(subscriptionList&&subscriptionList.length)+')'" class="subscription"  >
+<!--    <div style="text-align: center;font-size:16px;" @click="rssSearch=true">
       <i class="icon-add" style="font-size:16px;">添加新的订阅</i>
-    </div>
+    </div>-->
     <div class="listCon">
      <subscription-list :edit="edit"></subscription-list>
     </div>
@@ -15,22 +15,32 @@
 <script type="text/ecmascript-6">
   import Scroll from 'base/scroll2/scroll'
   import Search from 'components/search/search'
-  import {mapGetters} from 'vuex'
+  import {mapGetters, mapActions} from 'vuex'
   import SubscriptionList from './suggest/subscription-list'
-  import SubscriptionSearchBox from "../base/search-box/subscription-search-box";
+  import SubscriptionSearchBox from '../base/search-box/subscription-search-box'
+import {getLatestSubscriptionList} from 'common/js/service'
 
 export default {
     created() {
 
     },
     mounted() {
-
+      (async () => {
+        let rsubscriptionList = await getLatestSubscriptionList()
+        let first = !this.subscriptionList || this.subscriptionList.length === 0
+        for (let subscription of rsubscriptionList) {
+          if (first) {
+            subscription.enable = true
+          }
+          this.saveSubcription(subscription)
+        }
+      })()
     },
     data() {
       return {
         fullScreen: true,
         rssSearch: false,
-        edit:false
+        edit: false
       }
     },
     filters: {
@@ -46,9 +56,11 @@ export default {
         this.$router.push({
           path: `/subscription/search`
         })
-      }
+      },
+      ...mapActions([
+        'saveSubcription'
+      ])
     },
-
     computed: {
       ...mapGetters([
         'subscriptionList'

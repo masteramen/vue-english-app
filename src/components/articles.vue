@@ -1,45 +1,48 @@
 <template>
   <page title="home" :no-back="true">
     <m-header slot="navbar"  :data="songs"></m-header>
-    <div class="articles" ref="articles">
+    <div style="position:absolute;top:44px;bottom:60px;left:0;right:0">
+        <div class="articles" ref="articles">
 
-      <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
-        <div>
-          <div ref="topbar" style="position:absolute;width:100%;left:0;top:-45px;text-align:center;color:#999;padding-top:10px;padding-bottom:10px;"><div>{{pullDownTip}}</div><div v-if="lastFetchTime">上次刷新：{{lastFetchTime|formatDate2}} </div></div>
-          <ul>
-            <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
-              <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
-              <div class="sequenceList">
-                <div class="song">
-                  <div> <span>{{song.TITLE}}</span></div>
-                  <lazy-component @show="handlerTSCNTITLE(song)" >
-                    <span>{{song.TITLE_CN}}</span>
-                  </lazy-component>
-                </div>
+          <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
+            <div>
+              <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
+              <ul>
+                <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
+                  <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
+                  <div class="sequenceList">
+                    <div class="song">
+                      <div> <span>{{song.TITLE}}</span></div>
+                      <lazy-component @show="handlerTSCNTITLE(song)" v-if="reload">
+                        <span>{{song.TITLE_CN}}</span>
+                      </lazy-component>
+                    </div>
 
-                <div class="summary">
-                  <div class="summaryWrap">
-                    <span>{{song.ORG_SITE}}</span> |
-                    <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
-                    <span>{{song.POST_DATE|formatDate}}</span>
-                    <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
-                    <i v-if="song.AUDIO_URL" :class="{'icon-play':song.AUDIO_URL}" ></i>
-                    <i class="icon-success"  v-if="song.TOTAL"></i>
+                    <div class="summary">
+                      <div class="summaryWrap">
+                        <span>{{song.ORG_SITE}}</span> |
+                        <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
+                        <span>{{song.POST_DATE|formatDate}}</span>
+                        <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
+                        <i v-if="song.AUDIO_URL" :class="{'icon-play':song.AUDIO_URL}" ></i>
+                        <i class="icon-success"  v-if="song.TOTAL"></i>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-              <lazy-component @show="handlerIMG(song,song.IMG_URL)" class="icon" >
-                <img  :id="song.ID"  :dataSrc="song.IMG_URL" v-lazy="song.IMG_URL"   />
-              </lazy-component>
-            </li>
-          </ul>
-        </div>
-        <div class="loading-container" v-show="!songs.length">
-          <loading></loading>
-        </div>
-      </scroll>
+                  <lazy-component @show="handlerIMG(song,song.IMG_URL)" class="icon" >
+                    <img  :id="song.ID"  :dataSrc="song.IMG_URL" v-lazy="song.IMG_URL"   />
+                  </lazy-component>
+                </li>
+              </ul>
+            </div>
+            <div class="loading-container" v-show="!songs.length">
+              <loading></loading>
+            </div>
+          </scroll>
 
+        </div>
     </div>
+
   </page>
 </template>
 
@@ -48,12 +51,13 @@
   import Loading from 'base/loading/loading'
   import {playlistMixin} from 'common/js/mixin'
   import {formatDate} from 'common/js/formatDate'
-  import Bus from 'common/js/bus'
   import MHeader from 'components/m-header/m-header'
   import {shuffle} from 'common/js/util'
-  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic,createArticle} from 'common/js/service'
+  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle} from 'common/js/service'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
+  import Swipe from './swipe'
+  import SwipeItem from './swipe-item'
   export default {
     mixins: [playlistMixin],
     created() {
@@ -61,30 +65,19 @@
       this.pulldownRefreshDataList()
     },
     mounted() {
-      Bus.$on('refresh', _ => {
-        this.$nextTick(() => {
-          console.log('refresh...')
-          this.$refs.toplist.scrollTo(0, this.pullDownConfig.threshold)
-          this.$refs.toplist.$emit('scroll', {'x': 0, 'y': this.pullDownConfig.threshold})
-          this.$refs.toplist.$emit('pullingDown', true)
-        })
-      })
-      Bus.$on('downloadAll', _ => {
-        setTimeout(_ => {
-          downloadAllArticles(this.songs)
-        }, 0)
-      })
     },
     data() {
       return {
+        index: 0,
         songs: [],
+        reload: true,
         selected: -1,
         lastFetchTime: 0,
         pullDownTip: '',
         isPullingDown: false,
         pullDownConfig: {
           threshold: 60,
-          stop: 40
+          stop: 60
         }
       }
     },
@@ -97,14 +90,17 @@
       }
     },
     methods: {
-      handlerIMG(item,url) {
-        console.log('load:'+item.IMG_URL)
-        downloadArtilePic(item).then(nUrl=>{
-          console.log('done '+url+' => '+nUrl)
-        })
+      onSlideChangeStart (currentPage) {
+        console.log('onSlideChangeStart', currentPage)
       },
-      handlerTSCNTITLE(item){
-        if(!item.TITLE_CN){
+      onSlideChangeEnd (currentPage) {
+        console.log('onSlideChangeEnd', currentPage)
+      },
+      handlerIMG(item, url) {
+        downloadArtilePic(item)
+      },
+      handlerTSCNTITLE(item) {
+        if (!item.TITLE_CN) {
           item.tsTitle()
         }
       },
@@ -135,6 +131,8 @@
             return this._getLatestArticles()
           }).then(() => {
             this.$refs.toplist.forceUpdate(true)
+            this.reload = false
+            setTimeout(_ => this.reload = true, 200)
           })
       },
 
@@ -165,8 +163,8 @@
       selectItem(item, index) {
         this.selectCurIndex({index})
         let path = '/detail'
-        if(item.AUDIO_URL) path = '/player'
-
+        if (item.FEED_TYPE === 'audio') path = '/player'
+        console.log(item)
         this.$router.push({
           path: path
         })
@@ -178,11 +176,12 @@
 
       }),
       ...mapActions([
-        'selectCurIndex'
+        'selectCurIndex',
+        'toggleDownloadAll'
       ])
     },
     computed: {
-      ...mapGetters([ 'currentIndex']),
+      ...mapGetters([ 'currentIndex', 'downloadAll']),
       mSongs() {
         return this.songs
       }
@@ -193,13 +192,27 @@
         setTimeout(() => {
           this.$Lazyload.lazyLoadHandler()
         }, 20)
+      },
+      downloadAll(newValue, oldValue) {
+        if (newValue) {
+          setTimeout(_ => {
+            (async () => {
+              await downloadAllArticles(this.songs, () => {
+                return !this.downloadAll
+              })
+              if (this.downloadAll) this.toggleDownloadAll()
+            })()
+          }, 0)
+        }
       }
     },
     components: {
       Scroll,
       ProgressCircle,
       Loading,
-      MHeader
+      MHeader,
+      Swipe,
+      SwipeItem
     }
   }
 </script>
@@ -209,10 +222,10 @@
   @import "~common/stylus/mixin"
 
   .articles
-    position: fixed
+    position: absolute
     width: 100%
-    top: 44px
-    bottom: 60px
+    top: 0
+    bottom: 0
     background-color: #f0eff5
     .toplist
       height: 100%
@@ -225,10 +238,11 @@
         color: black
         .progressbar
           position: absolute;
-          top:0;
+          //top:0;
           bottom: 0
           background: green;
           opacity: 0.6;
+          height:2px;
         //&:last-child
           //padding-bottom: 20px
         .progress

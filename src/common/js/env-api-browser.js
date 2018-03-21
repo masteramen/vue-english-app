@@ -148,6 +148,21 @@ export function getOldArticlesAndMarkDelete(time) {
   })
 }
 
+export function deleteAllOldArticles() {
+
+  return new Promise((resolve, reject) => {
+    webdb.transaction(function (tx) {
+      let sql = `delete from T_ARTICLE  WHERE STATUS='D'`
+
+      tx.executeSql(sql, [], function (tx, results) {
+
+        resolve()
+      }, function (tx, error) {
+        reject(error)
+      })
+    })
+  })
+}
 export function update(id, name, value) {
   if (value) {
     webdb.transaction(function (tx) {

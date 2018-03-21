@@ -11,7 +11,7 @@
 </template>
 
 <script type="text/ecmascript-6">
-import {mapGetters, mapMutations, mapActions} from 'vuex'
+import {mapGetters, mapActions} from 'vuex'
 import Bus from 'common/js/bus'
 import indexMenu from './index-menu'
   export default {
@@ -23,15 +23,11 @@ import indexMenu from './index-menu'
         }
       }
     },
-  methods:{
-  ...mapMutations({
-    triggerDownloadAll: 'SET_DOWNLOAD_ALL_STATE'
-  }),
   refresh(){
         Bus.$emit('refresh');
 
   }
-  },
+  ,
   computed: {
   ...mapGetters([
     'downloadAll'

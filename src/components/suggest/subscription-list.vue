@@ -14,17 +14,23 @@
 
         </div>
         <div class="name">
-          <div>{{item.title}}</div>
-          <div>{{item.feedId}}</div>
+          <div style="position: relative;line-height:20px;">
+            <span>{{item.title}}</span>
+            <div @click="toggleItem(item)" style="position: absolute;top:0;right:0;">
+              <my-switch open-name="已订阅" close-name="订阅" size="lg" color="orange" :value.sync="item.enable===true"></my-switch>
+            </div>
+          </div>
+<!--          <div>{{item.feedId}}</div>-->
           <p class="text">{{item.description}}</p>
         </div>
+
         <div class="op" v-if="isEdit">
           <i class="icon-delete" @click="toggleItem(item)"></i>
         </div>
       </li>
       <loading v-show="hasMore" title=""></loading>
     </ul>
-    <div v-show="!hasMore && !subscriptionList.length" class="no-result-wrapper">
+    <div v-show="!hasMore && (!subscriptionList||!subscriptionList.length)" class="no-result-wrapper">
       <no-result title="暂无订阅，请点击添加新的订阅"></no-result>
     </div>
   </scroll>
@@ -38,7 +44,7 @@
   import {ERR_OK} from 'api/config'
   import {createSong} from 'common/js/song'
   import {mapMutations, mapActions, mapGetters} from 'vuex'
-
+  import mySwitch from 'vue-switch/switch-2.vue'
   const TYPE_SINGER = 'singer'
   const perpage = 20
 
@@ -77,7 +83,6 @@
         this.$refs.suggest.scrollTo(0, 0)
         search(this.query, this.page, this.showSinger, perpage).then((res) => {
           for(let item of res){
-            console.log('search...')
             if(this.subscriptionList.filter(e=>e.feedId===item.feedId).length>0){
               item.remove=true
             }else item.remove=false
@@ -117,7 +122,10 @@
         this.$emit('select', item)*/
       },
       toggleItem(item) {
-        this.toggleSubcription(Object.assign({},{},item))
+        console.log(item)
+        let cloneItem = Object.assign({},item,{enable:!item.enable})
+        console.log(cloneItem)
+        this.toggleSubcription(cloneItem)
         //item.remove = !item.remove
       },
 /*      getDisplayName(item) {
@@ -179,7 +187,8 @@
     components: {
       Scroll,
       Loading,
-      NoResult
+      NoResult,
+      mySwitch
     }
   }
 </script>

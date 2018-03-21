@@ -81,7 +81,7 @@
         this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
 
         let that = this
-        $('.lyric-wrapper').on('click', 'span', function() {
+        $(this.$refs.lyricList.$el).on('click', 'span', function() {
           $(this).toggleClass('mark')
           if ($(this).hasClass('mark')) {
             getDict($(this).text().trim()).then(result => {
@@ -121,7 +121,7 @@
     },
     methods: {
       handlerTS (index,line) {
-        this.curArticle.tr(this.lines,index).then(result => {
+        this.curArticle.translate(this.lines,index).then(result => {
           this.trlines.splice(index, 1, result)
         })
       },
@@ -201,7 +201,7 @@
       currentIndex(newIndex, oldIndex) {
 
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
-        if(currentArticle.AUDIO_URL) return
+        if(currentArticle.isAudio()) return
         this.curArticle = currentArticle
         this.$refs.lyricList.scrollTo(0, 0)
         if (this.currentLyric) {

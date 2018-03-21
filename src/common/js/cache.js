@@ -95,11 +95,15 @@ export function loadFavorite() {
 }
 
 export function loadSubscriptionList() {
-  return storage.get(SUBSCRIPTION_KEY, [])
+  let obj = storage.get(SUBSCRIPTION_KEY, [])
+  console.log('subscriptionkey')
+  console.log(obj)
+  return obj
 }
 export function saveOrDeleteSubcription(song) {
   let songs = storage.get(SUBSCRIPTION_KEY, [])
   console.log('saveOrDeleteSubcription')
+
   if (songs.filter(e => e.feedId === song.feedId).length > 0) {
     deleteFromArray(songs, (item) => {
       return item.feedId === song.feedId
@@ -113,4 +117,16 @@ export function saveOrDeleteSubcription(song) {
   storage.set(SUBSCRIPTION_KEY, songs)
   return songs
 }
+export function addSubcription(song) {
+  let songs = storage.get(SUBSCRIPTION_KEY, [])
+  const index = songs.findIndex(e => e.feedId === song.feedId)
+  if (index > -1) {
+    Object.assign(songs[index], song)
+  } else {
+    songs.push(song)
+  }
 
+  storage.set(SUBSCRIPTION_KEY, songs)
+  console.log(song)
+  return songs
+}

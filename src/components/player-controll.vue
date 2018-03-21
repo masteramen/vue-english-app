@@ -43,7 +43,7 @@
 </template>
 
 <script type="text/ecmascript-6">
-  import {mapGetters, mapMutations} from 'vuex'
+  import {mapGetters, mapMutations, mapActions} from 'vuex'
   import {prefixStyle} from 'common/js/dom'
 
   import ProgressCircle from 'base/progress-circle/progress-circle'
@@ -124,13 +124,17 @@
 
       open() {
         this.setFullScreen(true)
+        let index=0
         this.$router.push({
           path: `/player`
         })
       },
       ...mapMutations({
         setFullScreen: 'SET_FULL_SCREEN'
-      })
+      }),
+      ...mapActions([
+        'selectCurIndex'
+      ])
     },
     components: {
       ProgressCircle

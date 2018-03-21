@@ -12,26 +12,23 @@ const fs = CordovaPromiseFS({
   Promise: Promise // Your favorite Promise/A+ library!
 })
 
-export function downloadArtilePic(article, onProgress) {
+export async function downloadArtilePic(article, onProgress) {
   let localFile = `${article.ID}.jpg`
-  return fs.exists(localFile).then(exists => {
+  if (!article.IMG_URL) return
+  try {
+    let exists = await fs.exists(localFile)
     if (exists) {
       let url = fs.toURLSync(localFile)
       console.log(url)
       return url
-    } else {
-      return Promise.reject()
     }
-  }).catch(err => {
-    let nativeUrl = fs.toURLSync(localFile)
-    return fs.download(envApi.interceptUrl(article.IMG_URL), nativeUrl, {}, onProgress).then(ret => {
-      article.IMG_URL = nativeUrl
-      return nativeUrl
-    }).catch(err => {
-      // console.log(err);
-      console.log('err')
-    })
-  })
+  } catch (e) {
+
+  }
+  let nativeUrl = fs.toURLSync(localFile)
+  await fs.download(envApi.interceptUrl(article.IMG_URL), nativeUrl, {}, onProgress)
+  article.IMG_URL = nativeUrl
+  return nativeUrl
 }
 
 async function downloadLyric(article, onProgress) {
@@ -43,60 +40,57 @@ export async function getSilent() {
   return require('./../../../static/silent.mp3')
 }
 
-function downloadAudio(article, onProgress) {
-  let localFile = `${article.ID}.mp3`
-  if (!article.AUDIO_URL) return article
-
-  return fs.exists(localFile).then(exists => {
+async function fileExist(file) {
+  try {
+    let exists = await fs.exists(file)
     if (exists) {
-      let url = fs.toURLSync(localFile)
-      console.log(url)
-      return url
-    } else {
-      return Promise.reject()
+      return true
     }
-  }).catch(err => {
-    let nativeUrl = fs.toURLSync(localFile)
-    return fs.download(envApi.interceptUrl(article.AUDIO_URL), nativeUrl, {}, progressEvt => {
-      if (progressEvt.lengthComputable) {
-        article.percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
-      }
-      onProgress && onProgress(progressEvt)
-    }).then(ret => {
-      fs.fs.then(fs => {
-        fs.root.getFile(localFile, {create: false}, function (fileEntry) {
-          fileEntry.file(f => {
-            article.TOTAL = f.size
-            dataManager.update(article)
-          })
-        })
-      })
+  } catch (e) {
 
-      return nativeUrl
-    }).catch(err => {
-      // console.log(err);
-      console.log('err')
-    })
+  }
+  return false
+}
+
+async function downloadAudio(article, onProgress) {
+  fs.ensure(`${article.ID}`)
+  let localFile = `${article.ID}/${article.ID}.mp3`
+
+  if (!article.AUDIO_URL) return null
+  if (await fileExist(localFile)) return fs.toURLSync(localFile)
+
+  let nativeUrl = fs.toURLSync(localFile)
+  await downLoadQueue.add(_ => {
+    return (async _ => {
+      if (await fileExist(localFile)) return fs.toURLSync(localFile)
+
+      return fs.download(envApi.interceptUrl(article.AUDIO_URL), nativeUrl, {}, progressEvt => {
+        if (progressEvt.lengthComputable) {
+          article.percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
+        }
+        onProgress && onProgress(progressEvt)
+      })
+    })()
   })
+
+  let fileEntry = await fs.file(localFile, {create: false})
+  fileEntry.file(f => {
+    article.TOTAL = f.size
+    dataManager.update(article)
+  })
+  return nativeUrl
 }
 
 let downLoadQueue = new Queue(1)
-
-export function downloadAllArticles(articles) {
-  articles.forEach(article => {
-    downLoadQueue.add(function () {
-      return article.getLyric(true).then(() => {
-        return article.tsTitle()
-      }).then(() => {
-        return article.getAudio()
-      })
-    }, article).then(() => {
-      console.log(`download artile ${article.ID}  ok`)
-    }).catch(err => {
-      console.log(err)
-      console.log(`dowload article ${article.ID} fail.`)
-    })
-  })
+let downLoadLyricQueue = new Queue(1)
+let downloadTranslateQ = new Queue(1)
+export async function downloadAllArticles(articles, cancel) {
+  for (let article of articles) {
+    if (cancel && cancel()) break
+    await article.getLyric(true)
+    await article.tsTitle()
+    await article.getAudio()
+  }
 }
 
 export function getLatestArticles() {
@@ -105,9 +99,17 @@ export function getLatestArticles() {
 }
 
 export async function fetchLatest() {
-  let time = new Date().getTime() - 24 * 3600 * configProvider.getConfig().nDay
-  await envApi.getOldArticlesAndMarkDelete(time)
-  console.log('done getOldArticlesAndMarkDelete...')
+  let time = new Date().getTime() - 86400000 * configProvider.getConfig().nDay
+  let oldArticles = await envApi.getOldArticlesAndMarkDelete(time)
+  for (let o of oldArticles.contents) {
+    try {
+      await fs.removeDir(`${o.ID}`)
+    } catch (e) {
+      console.log(e)
+    }
+  }
+  await envApi.deleteAllOldArticles()
+
   await runAll()
 }
 
@@ -162,6 +164,9 @@ export class Article {
       this[k] = data[k]
     }
   }
+  isAudio(){
+    return this.AUDIO_URL || this.FEED_TYPE==='audio'
+  }
   async tsTitle() {
     let dict = await ts.translateWithAudio(this.TITLE)
     this.TITLE_CN = dict.result[0]
@@ -170,27 +175,38 @@ export class Article {
   async getLyric(translate) {
     let lyric = ''
     let lines = []
-
+    await fs.ensure(`${this.ID}`)
     if (!this.CONTENT) {
-      await downloadLyric(this);
+      await downLoadLyricQueue.add(_ => { return downloadLyric(this) });
       [lines, lyric] = await formate2Lyric(this)
       this.CONTENT = true
-      await fs.write(`${this.ID}.json`, JSON.stringify([lines, lyric]))
+      await fs.write(`${this.ID}/${this.ID}.json`, JSON.stringify([lines, lyric, this.DURATION]))
       await dataManager.update(this)
     } else {
-      [lines, lyric] = JSON.parse(await fs.read(`${this.ID}.json`))
+      let duration = null;
+      [lines, lyric, duration] = JSON.parse(await fs.read(`${this.ID}/${this.ID}.json`))
+      if (!duration && this.DURATION) {
+        this.CONTENT = lines.join('\n')
+        console.log(this.CONTENT)
+
+        let [lines2, lyric2] = await formate2Lyric(this)
+        this.CONTENT = true
+        await fs.write(`${this.ID}/${this.ID}.json`, JSON.stringify([lines2, lyric2, this.DURATION]))
+        lines = lines2
+        lyric = lyric2
+      }
     }
     if (translate) {
       for (let index = 0; index < lines.length; index++) {
-        await this.tr(lines, index)
+        await this.translate(lines, index)
       }
     }
 
     return {lines, lyric}
   }
 
-  async tr(lines, index) {
-    let seq = `${this.ID}-${index}-tr.txt`
+  async translate(lines, index) {
+    let seq = `${this.ID}/${index}-tr.txt`
     try {
       if (await fs.exists(seq)) {
         return await fs.read(seq)
@@ -199,7 +215,7 @@ export class Article {
       console.log(e)
     }
 
-    let dict = await ts.translateWithAudio(lines[index])
+    let dict = await downloadTranslateQ.add(_ => { return ts.translateWithAudio(lines[index]) })
     await fs.write(seq, dict.result[0])
 
     return dict.result[0]
@@ -225,6 +241,7 @@ export function createArticle(row) {
 export const configProvider = dataManager.getConfigProvider()
 
 import * as ts from 'common/js/translation'
+import {decrypt2} from "./crypto";
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {
@@ -259,5 +276,27 @@ export function getDict(text) {
 }
 export function getDictList() {
   return dataManager.getDictList()
+}
+
+const axios = require('axios')
+const $ = require('jquery')
+export async function getLatestSubscriptionList() {
+  var feed = 'http://www.jfox.info/rss/rsslist.php'
+
+  return axios.get(feed, {}).then((res) => {
+    let ret = []
+    $($.parseXML(decrypt2(res.data.trim()))).find('item').each(function () {
+      var el = $(this)
+      ret.push({
+        feedId: el.find('link').text(),
+        iconUrl: '',
+        type: el.find('type').text(),
+        title: el.find('title').text(),
+        alias: el.find('alias').text(),
+        description: el.find('description').text()
+      })
+    })
+    return ret
+  })
 }
 
