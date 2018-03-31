@@ -31,8 +31,7 @@ export async function downloadArtilePic(article, onProgress) {
   return nativeUrl
 }
 
-async function downloadLyric(article, onProgress) {
-  if (article.CONTENT) return article
+async function downloadLyric(article) {
   return await dataManager.getDetail(article)
 }
 
@@ -52,7 +51,26 @@ async function fileExist(file) {
   return false
 }
 
-async function downloadAudio(article, onProgress) {
+let loadingList = []
+let subscriberList = []
+function waitFinish(id) {
+  return new Promise((resolve, reject) => {
+    if (!subscriberList[id])subscriberList[id] = []
+    subscriberList[id].push([resolve, reject])
+  })
+}
+function notify(id, success, fail) {
+  if (subscriberList[id]) {
+    for (let i = 0; i < subscriberList[id].length; i++) {
+      if (success)subscriberList[id][i][0](success)
+      else subscriberList[id][i][1](fail)
+    }
+
+    subscriberList[id] = null
+  }
+}
+
+async function downloadAudio(article, onProgress, downLoadQueue) {
   fs.ensure(`${article.ID}`)
   let localFile = `${article.ID}/${article.ID}.mp3`
 
@@ -60,10 +78,15 @@ async function downloadAudio(article, onProgress) {
   if (await fileExist(localFile)) return fs.toURLSync(localFile)
 
   let nativeUrl = fs.toURLSync(localFile)
-  await downLoadQueue.add(_ => {
+
+  if (loadingList.indexOf(article.ID) > -1) {
+    return await waitFinish(article.ID)
+  }
+  async function downloadTask() {
     return (async _ => {
       if (await fileExist(localFile)) return fs.toURLSync(localFile)
 
+      loadingList.push(article.ID)
       return fs.download(envApi.interceptUrl(article.AUDIO_URL), nativeUrl, {}, progressEvt => {
         if (progressEvt.lengthComputable) {
           article.percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
@@ -71,25 +94,42 @@ async function downloadAudio(article, onProgress) {
         onProgress && onProgress(progressEvt)
       })
     })()
-  })
+  }
 
-  let fileEntry = await fs.file(localFile, {create: false})
-  fileEntry.file(f => {
-    article.TOTAL = f.size
-    dataManager.update(article)
-  })
+  try {
+    if (downLoadQueue) {
+      await downLoadQueue.add(_ => {
+        return downloadTask()
+      })
+    } else await downloadTask()
+
+    let fileEntry = await fs.file(localFile, {create: false})
+    fileEntry.file(f => {
+      article.TOTAL = f.size
+      dataManager.update(article)
+    })
+    loadingList.splice(loadingList.indexOf(article.ID), 1)
+    notify(article.ID, nativeUrl)
+  } catch (e) {
+    notify(article.ID, null, e)
+  }
+
   return nativeUrl
 }
 
-let downLoadQueue = new Queue(1)
+let downLoadQueue = new Queue(2, Infinity, true)
 let downLoadLyricQueue = new Queue(1)
 let downloadTranslateQ = new Queue(1)
 export async function downloadAllArticles(articles, cancel) {
   for (let article of articles) {
-    if (cancel && cancel()) break
-    await article.getLyric(true)
-    await article.tsTitle()
-    await article.getAudio()
+    try {
+      if (cancel && cancel()) break
+      await article.getLyric(true)
+      await article.tsTitle()
+      await article.getAudio(null, downLoadQueue)
+    } catch (e) {
+      console.log(e)
+    }
   }
 }
 
@@ -114,25 +154,23 @@ export async function fetchLatest() {
 }
 
 function formate2Lyric(detailObj) {
-  let duration = 0
-  let content = detailObj.CONTENT
-  if (detailObj.DURATION) {
-    duration = detailObj.DURATION
-  } else if (detailObj.TOTAL) {
-    duration = detailObj.TOTAL / 2733529 * 170
-  } else {
-    duration = content.split(/[\n\s]+/).length * 0.7
-  }
-
-  let text = content
+  let duration = detailObj.DURATION || 6 * 60
+  let text = detailObj.CONTENT
 
   let timer = 0
   let str = `[ti:${detailObj.TITLE}]\r\n`
-  str += `[by:${detailObj.REFERER}]\n`
   let fixnum = n => {
     return (Array(2).join('0') + n).slice(-2)
   }
   let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/).filter(n => n.trim())
+  let reLines = [];
+  lines.forEach(line=>{
+
+    if(reLines.length==0 || reLines[reLines.length-1].trim().length>20)reLines.push(line)
+    else reLines[reLines.length-1]= reLines[reLines.length-1]+' '+line
+
+  })
+  lines = reLines;
 
   return (async () => {
     let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
@@ -164,8 +202,8 @@ export class Article {
       this[k] = data[k]
     }
   }
-  isAudio(){
-    return this.AUDIO_URL || this.FEED_TYPE==='audio'
+  isAudio() {
+    return this.AUDIO_URL || this.FEED_TYPE === 'audio'
   }
   async tsTitle() {
     let dict = await ts.translateWithAudio(this.TITLE)
@@ -176,37 +214,43 @@ export class Article {
     let lyric = ''
     let lines = []
     await fs.ensure(`${this.ID}`)
-    if (!this.CONTENT) {
-      await downLoadLyricQueue.add(_ => { return downloadLyric(this) });
-      [lines, lyric] = await formate2Lyric(this)
-      this.CONTENT = true
-      await fs.write(`${this.ID}/${this.ID}.json`, JSON.stringify([lines, lyric, this.DURATION]))
+
+    let path = `${this.ID}/${this.ID}.json`
+    let jsonExist = await fs.exists(path)
+    if (!jsonExist) {
+      await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
+      if (this.CONTENT && this.CONTENT.substring(0, 4) === '[ti:') {
+        let transArr = this.CONTENT.split(/\n/).filter((s, i) => i % 2 === 1)
+        lyric = this.CONTENT.split(/\n/).filter((s, i) => i % 2 === 0).join('\n')
+        lines = this.CONTENT.split(/\n/).filter((s, i) => i % 2 === 0).map(x => x.replace(/\[.*?\]/))
+
+        for (let i = 0; i < transArr.length; i++) {
+          let seq = `${this.ID}/${i}-tr.txt`
+          await fs.write(seq, transArr[i])
+        }
+      } else {
+        [lines, lyric] = await formate2Lyric(this)
+        if (translate) {
+          for (let index = 0; index < lines.length; index++) {
+            await this.translate(lines, index)
+          }
+        }
+      }
+      await fs.write(path, JSON.stringify([lines, lyric, this.DURATION]))
       await dataManager.update(this)
     } else {
-      let duration = null;
-      [lines, lyric, duration] = JSON.parse(await fs.read(`${this.ID}/${this.ID}.json`))
-      if (!duration && this.DURATION) {
-        this.CONTENT = lines.join('\n')
-        console.log(this.CONTENT)
-
-        let [lines2, lyric2] = await formate2Lyric(this)
-        this.CONTENT = true
-        await fs.write(`${this.ID}/${this.ID}.json`, JSON.stringify([lines2, lyric2, this.DURATION]))
-        lines = lines2
-        lyric = lyric2
-      }
-    }
-    if (translate) {
-      for (let index = 0; index < lines.length; index++) {
-        await this.translate(lines, index)
-      }
+      let [lines, lyric, duration] = JSON.parse(await fs.read(path))
+      console.log(lines)
+      console.log(lyric)
+      console.log(duration)
+      return {lines, lyric}
     }
 
     return {lines, lyric}
   }
 
   async translate(lines, index) {
-    let seq = `${this.ID}/${index}-tr.txt`
+    let seq = `${this.ID}/${index+1}-tr.txt`
     try {
       if (await fs.exists(seq)) {
         return await fs.read(seq)
@@ -221,14 +265,14 @@ export class Article {
     return dict.result[0]
   }
 
-  getAudio(onProgress) {
+  getAudio(onProgress, downLoadQueue) {
     if (!this.AUDIO_URL) {
       return Promise.reject({code: 1, desc: '找不到音频文件！'})
     }
     if (navigator.connection.type === Connection.CELL && configProvider.getConfig().checklistValues.indexOf('download-cell-net-work') === -1) {
       return Promise.reject({code: 0, desc: '请先设置开启手机网络下载音频选项！'})
     }
-    return downloadAudio(this, onProgress)
+    return downloadAudio(this, onProgress, downLoadQueue)
   }
 
 }
@@ -241,7 +285,7 @@ export function createArticle(row) {
 export const configProvider = dataManager.getConfigProvider()
 
 import * as ts from 'common/js/translation'
-import {decrypt2} from "./crypto";
+import {decrypt2} from './crypto'
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {

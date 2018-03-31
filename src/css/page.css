@@ -55,6 +55,7 @@ html,body,.wh100{height: 100%;width: 100%;}
 .page.down{
 	-webkit-transform: translate(0,100%);
 	-webkit-transition-duration: 300ms;
+  opacity: 0;
 }
 .page.prev{
   -webkit-transform: translateX(-33%);
@@ -64,6 +65,7 @@ html,body,.wh100{height: 100%;width: 100%;}
 .page.show, .page.keep{
 	-webkit-transform: translate(0);
 	transform: translate(0);
+  opacity: 1;
 }
 .page.keep{
   -webkit-transform: translate(0);

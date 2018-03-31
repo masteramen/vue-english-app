@@ -17,7 +17,7 @@
           </mt-cell>
           </div>
           <div @click="clickVersion">
-          <mt-cell title="软件版本" :value="1.0" >{{config.isDebug>10?'Debug':''}}</mt-cell>
+            <mt-cell title="软件版本" ><span :class="{admin:config.isDebug>10}">1.0</span></mt-cell>
           </div>
 
         </ul>
@@ -187,6 +187,8 @@
     .toplist
       height: 100%
       overflow: hidden
+      .admin
+        color:red;
       .item
         display: flex
         margin: 0 20px

@@ -69,12 +69,12 @@
      *     doStuffWith(file);
      * });
      */
-    function Queue(maxPendingPromises, maxQueuedPromises) {
+    function Queue(maxPendingPromises, maxQueuedPromises,priority=false) {
         this.pendingPromises = 0;
         this.maxPendingPromises = typeof maxPendingPromises !== 'undefined' ? maxPendingPromises : Infinity;
         this.maxQueuedPromises = typeof maxQueuedPromises !== 'undefined' ? maxQueuedPromises : Infinity;
         this.queue = [];
-        this.uniqueKeys=[];
+        this.priority = priority;
     }
 
     /**
@@ -97,7 +97,7 @@
                 reject(new Error('Queue limit reached'));
                 return;
             }
-            
+
 
             // Add to queue
             self.queue.push({
@@ -141,7 +141,23 @@
         }
 
         // Remove from queue
-        var item = this.queue.shift();
+        var item = null;
+        if(this.priority){
+
+          for(let i=0;i<this.queue.length;i++) {
+            if (!item || this.queue[i].opt.priority > item.opt.priority){
+              item = this.queue[i];
+            }
+
+          }
+          if(item){
+            this.queue.splice(this.queue.indexOf(item),1)
+          }
+        }else{
+           item = this.queue.shift();
+
+        }
+
         if (!item) {
             return false;
         }

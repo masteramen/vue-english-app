@@ -10,13 +10,15 @@
         <i class="icon-back"></i>
       </div>
       <div class="title" ref="title">正文<span v-if="editMode">（编辑）</span></div>
-        <admin-menu></admin-menu>
+        <admin-menu v-if="config.isDebug>10"></admin-menu>
       </div>
     </div>
     <div class="middle" ref="middle">
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
+<!--
           <p class="cover"><img v-if="curArticle.IMG_URL" v-lazy="curArticle.IMG_URL" style="max-width:100%;margin-left:50%;transform: translateX(-50%);"/></p>
+-->
           <p class="text">{{curArticle.TITLE}}</p>
           <p class="text">{{curArticle.TITLE_CN}}</p>
           <div v-if="currentLyric" >
@@ -57,7 +59,7 @@
         <div class="icon i-left" :class="disableCls">
           <i @click="prev" class="icon-prev"></i>
         </div>
-        <div class="icon i-center" :class="disableCls">
+        <div class="icon i-center" :class="{disable:disableCls}">
           <i @click="togglePlaying" :class="playIcon"></i>
         </div>
         <div class="icon i-right" :class="disableCls">
@@ -86,12 +88,12 @@
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
   import {getSilent, createArticle, getDict, configProvider} from 'common/js/service'
-  import {update} from 'common/js/data-manager'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
   export default {
     data() {
       return {
+        config: configProvider.getConfig(),
         curArticle: createArticle({}),
         songReady: false,
         currentTime: 0,
@@ -186,10 +188,9 @@
         $(this.$refs.lyricList.$el).on('click', 'span', function() {
           if (!$(this).data('mark')) {
             $(this).addClass('mark')
-            $(this).data('mark',true)
+            $(this).data('mark', true)
             $(this).find('b').remove()
             getDict($(this).text().trim()).then(result => {
-
               let html = $(this).html().trim()
 
               $(this).html(`${html}<b>(${result.result})</b>`)
@@ -201,11 +202,11 @@
                 that.togglePlaying()
               }
 
-              let onerror = ()=> {
+              let onerror = () => {
                 if (playing) {
                   that.togglePlaying()
                 }
-                $(this).data('mark',false)
+                $(this).data('mark', false)
               }
               player.tmpPlay(result.audio, onerror, onerror)
               // that.$refs.wordAudio.play()
@@ -243,7 +244,8 @@
         'playing',
         'currentIndex',
         'mode',
-        'editMode'
+        'editMode',
+        'subscriptionList'
       ])
     },
     methods: {
@@ -296,6 +298,7 @@
         }
       },
       togglePlaying() {
+        if (this.disableCls) return
         this.setPlayingState(!this.playing)
       },
       toggleLyric() {
@@ -313,13 +316,11 @@
         }
       },
       onDuration(e) {
-        if(!this.curArticle.DURATION){
+        if (!this.curArticle.DURATION) {
           this.getLyric()
         }
         this.curArticle.DURATION = e.detail
-        console.log(this.curArticle)
-        //update(this.curArticle)
-
+        // update(this.curArticle)
       },
       loop() {
         this.currentTime = 0
@@ -465,6 +466,8 @@
             }
             this.loadingTitle = ''
             if (lyric) this.currentLyric = new Lyric(lyric, this.handleLyric)
+            console.log(lyric)
+            console.log(this.currentLyric)
           })
       },
       handleLyric({ lineNum, txt }) {
@@ -519,7 +522,7 @@
     watch: {
       currentIndex(newIndex, oldIndex) {
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
-        if (!currentArticle.isAudio()) return
+        if (!currentArticle || !currentArticle.isAudio()) return
         this.songReady = false
         this.currentTime = 0
         player.pause()
@@ -559,8 +562,10 @@
       playing(newPlaying) {
         if (newPlaying) {
           if (this.songReady) {
-            newPlaying ? player.play() : player.pause()
-            this.currentLyric.togglePlay()
+            this.curArticle.getAudio().then(url => {
+              newPlaying ? player.play(url) : player.pause()
+              this.currentLyric.togglePlay()
+            })
           } else {
             this.getAudio()
           }
@@ -570,7 +575,7 @@
         }
       },
       fullScreen(value) {
-        if(this.currentIndex<0){
+        if (this.currentIndex < 0) {
           let index = window.sequenceList.findIndex((item) => {
             return item.isAudio()
           })

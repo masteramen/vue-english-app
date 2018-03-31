@@ -11,19 +11,19 @@ class Player {
     return this
   }
 
-  tmpPlay(url,onerror,onended){
+  tmpPlay(url, onerror, onended) {
     let tmpmedia = new Media(url,
       () => {
         console.log('play :' + url)
       },
       err => {
         console.log(err)
-        onerror&&onerror()
+        onerror && onerror()
       },
       mediaStatus => {
         console.log(`mediaStatus:${mediaStatus}`)
         if (mediaStatus == Media.MEDIA_STOPPED) {
-          onended&&onended()
+          onended && onended()
           tmpmedia.release()
         }
       }
@@ -52,7 +52,7 @@ class Player {
         }
       }
     )
-
+    this.audioUrl = url
     this.my_media.play({numberOfLoops: new Date().getTime()})
     console.log('play silent model.....')
   }
@@ -75,6 +75,15 @@ class Player {
 
           console.log('playAudio():Audio Success')
           if (this.timer) clearInterval(this.timer)
+          // this.my_media.getCurrentPosition(
+          //   position => {
+          //    console.log(`position:${position} && this.my_media.getDuration():${this.my_media.getDuration()}`)
+          //   },
+          //   function (e) {
+          //     console.log('Error getting pos=' + e)
+          //   }
+          // )
+
         },
         err => {
           this.audio.dispatchEvent(new Event('error'))
@@ -97,6 +106,7 @@ class Player {
       var timerDur = setInterval(() => {
         if (this.my_media.getDuration() > 0) {
           clearInterval(timerDur)
+          console.log(this.my_media.getDuration())
           console.log('trigger duration event')
           this.audio.dispatchEvent(new CustomEvent('duration', {'detail': this.my_media.getDuration()}))
         }

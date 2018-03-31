@@ -59,9 +59,9 @@ if (/(android)/i.test(navigator.userAgent)) {
   }
 } else if (/(ipod|iphone|ipad)/i.test(navigator.userAgent)) {
   admobid = { // for iOS
-    banner: 'ca-app-pub-3940256099942544/6300978111',
-    interstitial: 'ca-app-pub-3940256099942544/1033173712',
-    reward: 'ca-app-pub-3940256099942544/5224354917'
+    banner: 'ca-app-pub-9477174171188196/3994804736',
+    interstitial: 'ca-app-pub-9477174171188196/4534780651',
+    reward: 'ca-app-pub-9477174171188196/1480353851'
   }
 } else {
   admobid = { // for Windows Phone
@@ -71,18 +71,7 @@ if (/(android)/i.test(navigator.userAgent)) {
 }
 
 if (AdMob) {
-  AdMob.setOptions({isTesting: true}, _ => {
-    AdMob.prepareInterstitial({adId: admobid.interstitial, autoShow: false})
-
-   /* AdMob.prepareRewardVideoAd({adId: 'ca-app-pub-3940256099942544/1712485313', autoShow: true}, _ => {
-
-
-    }, _ => {
-      alert('reward fail')
-    })*/
-
-    // alert('ready1')
-  })
+  AdMob.prepareInterstitial({adId: admobid.interstitial, autoShow: false})
 }
 
 // show the interstitial later, e.g. at end of game level

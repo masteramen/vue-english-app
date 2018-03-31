@@ -104,11 +104,11 @@
           if(to.path=='/detail'){
 
             //AdMob.showRewardVideoAd()
-            AdMob.createBanner({
+           /* AdMob.createBanner({
               adId: 'ca-app-pub-3940256099942544/6300978111',
               position:AdMob.AD_POSITION.BOTTOM_CENTER,
               autoShow: true
-            })
+            })*/
           }else{
             AdMob.removeBanner();
             if(to.path=='/list'){

@@ -29,7 +29,7 @@
                       </div>
                     </div>
                   </div>
-                  <lazy-component @show="handlerIMG(song,song.IMG_URL)" class="icon" >
+                  <lazy-component v-if="song.IMG_URL" @show="handlerIMG(song,song.IMG_URL)" class="icon" >
                     <img  :id="song.ID"  :dataSrc="song.IMG_URL" v-lazy="song.IMG_URL"   />
                   </lazy-component>
                 </li>
@@ -56,15 +56,17 @@
   import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle} from 'common/js/service'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
-  import Swipe from './swipe'
-  import SwipeItem from './swipe-item'
+
   export default {
     mixins: [playlistMixin],
     created() {
-      this._getLatestArticles()
-      this.pulldownRefreshDataList()
     },
     mounted() {
+      let time = this.subscriptionList&&this.subscriptionList.length?0:6*1000
+      setTimeout(()=>{
+        this._getLatestArticles()
+        this.pulldownRefreshDataList()
+      },time)
     },
     data() {
       return {
@@ -130,7 +132,7 @@
             this.lastFetchTime = new Date().getTime()
             return this._getLatestArticles()
           }).then(() => {
-            this.$refs.toplist.forceUpdate(true)
+            this.$refs.topli//  lllkkst./////(true)
             this.reload = false
             setTimeout(_ => this.reload = true, 200)
           })
@@ -181,7 +183,11 @@
       ])
     },
     computed: {
-      ...mapGetters([ 'currentIndex', 'downloadAll']),
+      ...mapGetters([
+        'currentIndex',
+        'downloadAll',
+        'subscriptionList'
+      ]),
       mSongs() {
         return this.songs
       }
@@ -210,9 +216,7 @@
       Scroll,
       ProgressCircle,
       Loading,
-      MHeader,
-      Swipe,
-      SwipeItem
+      MHeader
     }
   }
 </script>
@@ -275,7 +279,7 @@
           display: flex
           flex-direction: column
           justify-content: center
-          padding: 0 0 0 10px
+          padding: 0 10px 0 10px
           overflow: hidden
           font-size: $font-size-small
           .song

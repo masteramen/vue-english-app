@@ -45,6 +45,9 @@ async function getList(theurl, results) {
     try {
       let row = await isExist(detailObj)
       if (row && row.ID) continue
+      console.log(detailObj.POST_TIME)
+      console.log(time)
+      console.log(JSON.stringify(detailObj))
       if (detailObj.POST_TIME > time) await insert(detailObj)
     } catch (e) {
       console.log(e)
@@ -57,10 +60,14 @@ function isExist(DETAIL) {
     let sql = `SELECT *,count(1) as c FROM T_ARTICLE WHERE REFERER='${DETAIL.REFERER} group by REFERER'`
     console.log(sql)
     db.all(sql, (error, rows) => {
+      console.log('error:'+error);
+      console.log('rows:'+rows)
       if (error || rows.length === 0) {
         console.log(error)
         return reject(error)
       }
+      console.log('rows:'+JSON.stringify(rows))
+
       return resolve(rows[0])
     })
   })
@@ -121,6 +128,7 @@ async function runJobs() {
 
   for (let item of subscriptList) {
     let response = await getResponse(item.feedId)
+    // let response = await getResponse('https://feed43.com/6302168535022045.xml')
 
     let results = rss.getItems(item, response)
     await getList(item.feedId, results)

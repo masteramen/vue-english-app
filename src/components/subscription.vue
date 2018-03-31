@@ -22,9 +22,6 @@ import {getLatestSubscriptionList} from 'common/js/service'
 
 export default {
     created() {
-
-    },
-    mounted() {
       (async () => {
         let rsubscriptionList = await getLatestSubscriptionList()
         let first = !this.subscriptionList || this.subscriptionList.length === 0
@@ -34,7 +31,10 @@ export default {
           }
           this.saveSubcription(subscription)
         }
+
       })()
+    },
+    mounted() {
     },
     data() {
       return {

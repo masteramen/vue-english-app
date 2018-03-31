@@ -9,7 +9,7 @@
   >
     <ul class="suggest-list">
       <li @click="selectItem(item)" class="suggest-item" v-for="item in subscriptionList">
-        <div class="icon">
+        <div class="icon" v-if="item.visualUrl">
           <div class="image" :style="'background-image: url('+item.visualUrl+');height:60px;width:60px;'"></div>
 
         </div>
