@@ -115,15 +115,6 @@ export const rss = {
     return results
   },
 
-  getDetail: function (response, detail) {
-    let result = Object.assign(detail, {
-      'response': response
-    })
-
-    result.CONTENT = $('div[property=articleBody] > p', response.data).toArray()/* .filter(x=>$(x).find('a').length===0) */.map(x => $(x).text()).join('\n').replace(/\n+/g, '\n')
-
-    return result
-  },
   url2io: function(detailObj) {
     // var feed = `https://www.freefullrss.com/feed.php?url=${encodeURIComponent(`http://www.jfox.info/rss.php?title=test&link=${encodeURIComponent(detailObj.REFERER)}`)}&max=1&links=preserve&exc=&submit=Create+Full+Text+RSS`;
 

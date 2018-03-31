@@ -26,7 +26,7 @@
               <p ref="lyricLine"
                  class="text"
                  :class="{'current': currentLyric.curNum-1 ===index}"
-                v-html="line.txt" @click="playTime(line.time)">
+                 v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
               </p>
               <lazy-component @show="handlerTS(index,line)" class="text" v-if="reload" >
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
@@ -83,13 +83,14 @@
   import ProgressBar from 'base/progress-bar/progress-bar'
   import ProgressCircle from 'base/progress-circle/progress-circle'
   import {playMode} from 'common/js/config'
-  import Lyric from 'lyric-parser'
+  import Lyric from 'common/js/lyric-parser'
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle, getDict, configProvider} from 'common/js/service'
+  import {getSilent, createArticle, getDict, configProvider, saveArticleToRemote} from 'common/js/service'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
+  import Bus from 'common/js/bus'
   export default {
     data() {
       return {
@@ -116,13 +117,20 @@
     },
     created() {
       this.touch = {}
+      Bus.$on('saveRemote', target => {
+        (async ()=>{
+          saveArticleToRemote(this.curArticle,this.currentLyric,this.lines);
+          alert('save success')
+        })()
+
+      });
     },
     mounted() {
       getSilent()
 
-      if (this.editMode) {
         this.$nextTick(() => {
           touchDir(this.$refs.lyricList.$el, dir => {
+            if (this.editMode) {
             if (!this.playing) {
               return
             }
@@ -145,9 +153,10 @@
             }
 
             this.currentLyric.play(elips)
+          }
           })
         })
-      }
+
       this.$nextTick(() => {
         this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
         player.setAudio(this.$refs.audio)
@@ -316,11 +325,11 @@
         }
       },
       onDuration(e) {
-        if (!this.curArticle.DURATION) {
-          this.getLyric()
+        if(!this.curArticle.DURATION){
+          this.curArticle.DURATION = e.detail
+          this.curArticle.save()
         }
-        this.curArticle.DURATION = e.detail
-        // update(this.curArticle)
+
       },
       loop() {
         this.currentTime = 0
@@ -471,7 +480,7 @@
           })
       },
       handleLyric({ lineNum, txt }) {
-        // console.log(txt)
+         console.log(txt)
         this.$nextTick(() => {
           this.currentLineNum = lineNum
           let curLine = this.$refs.lyricLine[lineNum]
@@ -551,6 +560,9 @@
           if (this.playing) {
             this.curArticle.getAudio().then(url => {
               player.play(url, this.currentTime)
+              console.log('play..............')
+              console.log(this.currentTime)
+              console.log(this.currentLyric)
               if (this.currentLyric) this.currentLyric.play(this.currentTime)
             })
           }

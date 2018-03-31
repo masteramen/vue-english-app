@@ -53,7 +53,7 @@ export default {
       selectItem(item,index){
         if(item.name ==='editModel'){
           this.setEditMode(!this.editMode)
-        }
+        }else Bus.$emit(item.name, item.name);
       },
       ...mapMutations({
         setEditMode: 'SET_EDIT_MODE'

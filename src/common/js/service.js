@@ -2,7 +2,6 @@ import Queue from 'common/js/promise-queue'
 import CordovaPromiseFS from 'common/js/promise-fs'
 import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
-
 const dataManager = require('./data-manager')
 
 const fs = CordovaPromiseFS({
@@ -152,6 +151,9 @@ export async function fetchLatest() {
 
   await runAll()
 }
+let fixnum = n => {
+  return (Array(2).join('0') + n).slice(-2)
+}
 
 function formate2Lyric(detailObj) {
   let duration = detailObj.DURATION || 6 * 60
@@ -159,18 +161,14 @@ function formate2Lyric(detailObj) {
 
   let timer = 0
   let str = `[ti:${detailObj.TITLE}]\r\n`
-  let fixnum = n => {
-    return (Array(2).join('0') + n).slice(-2)
-  }
+
   let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/).filter(n => n.trim())
-  let reLines = [];
-  lines.forEach(line=>{
-
-    if(reLines.length==0 || reLines[reLines.length-1].trim().length>20)reLines.push(line)
-    else reLines[reLines.length-1]= reLines[reLines.length-1]+' '+line
-
+  let reLines = []
+  lines.forEach(line => {
+    if (reLines.length == 0 || reLines[reLines.length - 1].trim().length > 20)reLines.push(line)
+    else reLines[reLines.length - 1] = reLines[reLines.length - 1] + ' ' + line
   })
-  lines = reLines;
+  lines = reLines
 
   return (async () => {
     let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
@@ -219,15 +217,24 @@ export class Article {
     let jsonExist = await fs.exists(path)
     if (!jsonExist) {
       await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
+      console.log(this.CONTENT)
       if (this.CONTENT && this.CONTENT.substring(0, 4) === '[ti:') {
-        let transArr = this.CONTENT.split(/\n/).filter((s, i) => i % 2 === 1)
-        lyric = this.CONTENT.split(/\n/).filter((s, i) => i % 2 === 0).join('\n')
-        lines = this.CONTENT.split(/\n/).filter((s, i) => i % 2 === 0).map(x => x.replace(/\[.*?\]/))
+
+
+        let split = this.CONTENT.split(/\n/);
+        split.shift();
+        this.TITLE_CN = split.shift();
+        let transArr = split.filter((s, i) => i % 2 === 1)
+        lyric = split.filter((s, i) => i % 2 === 0).join('\n')
+        lines = split.filter((s, i) => i % 2 === 0).map(x => x.replace(/\[.*?\]/))
 
         for (let i = 0; i < transArr.length; i++) {
           let seq = `${this.ID}/${i}-tr.txt`
           await fs.write(seq, transArr[i])
         }
+        console.log(transArr)
+        console.log(lyric)
+        console.log(lines)
       } else {
         [lines, lyric] = await formate2Lyric(this)
         if (translate) {
@@ -250,7 +257,7 @@ export class Article {
   }
 
   async translate(lines, index) {
-    let seq = `${this.ID}/${index+1}-tr.txt`
+    let seq = `${this.ID}/${index}-tr.txt`
     try {
       if (await fs.exists(seq)) {
         return await fs.read(seq)
@@ -274,6 +281,9 @@ export class Article {
     }
     return downloadAudio(this, onProgress, downLoadQueue)
   }
+  save(){
+     dataManager.update(this)
+  }
 
 }
 
@@ -285,7 +295,7 @@ export function createArticle(row) {
 export const configProvider = dataManager.getConfigProvider()
 
 import * as ts from 'common/js/translation'
-import {decrypt2} from './crypto'
+import {decrypt2, encrypt2} from './crypto'
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {
@@ -342,5 +352,35 @@ export async function getLatestSubscriptionList() {
     })
     return ret
   })
+}
+export async function saveArticleToRemote(article, lyric, lines) {
+  await dataManager.update(article)
+  console.log(lyric)
+  window.lyric = lyric
+  let str = `[ti:${article.TITLE}]\n`
+  str += `${article.TITLE_CN}\n`
+  for (let i = 0; i < lyric.lines.length; i++) {
+    let line = lyric.lines[i]
+    let m = fixnum(parseInt(line.time / 60000))
+    let s = fixnum(parseInt(line.time / 1000) % 60)
+    let ms = fixnum(0)
+    str += `[${m}:${s}.${ms}]${$('<div/>').append(line.txt).text().trim()}\n`
+    let lineTs = await article.translate(lines, i)
+    str += `${lineTs}\n`
+  }
+
+  const data = Object.assign({}, {
+    link: article.REFERER,
+    content: str,
+    audio: article.AUDIO_URL,
+    title: article.TITLE,
+    pubDate: parseInt(article.POST_DATE)
+  }, {})
+  let encryptStr = encrypt2(JSON.stringify(data))
+  console.log(article)
+  console.log(data)
+  axios.post('http://www.jfox.info/rss/post.php', {'_e': encryptStr})
+
+  console.log(str)
 }
 
