@@ -33,10 +33,10 @@ export async function downloadArtilePic(article, onProgress) {
 async function downloadLyric(article) {
   return await dataManager.getDetail(article)
 }
-
+/*
 export async function getSilent() {
   return require('./../../../static/silent.mp3')
-}
+}*/
 
 async function fileExist(file) {
   try {
@@ -219,11 +219,9 @@ export class Article {
       await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
       console.log(this.CONTENT)
       if (this.CONTENT && this.CONTENT.substring(0, 4) === '[ti:') {
-
-
-        let split = this.CONTENT.split(/\n/);
-        split.shift();
-        this.TITLE_CN = split.shift();
+        let split = this.CONTENT.split(/\n/)
+        split.shift()
+        this.TITLE_CN = split.shift()
         let transArr = split.filter((s, i) => i % 2 === 1)
         lyric = split.filter((s, i) => i % 2 === 0).join('\n')
         lines = split.filter((s, i) => i % 2 === 0).map(x => x.replace(/\[.*?\]/))
@@ -281,8 +279,8 @@ export class Article {
     }
     return downloadAudio(this, onProgress, downLoadQueue)
   }
-  save(){
-     dataManager.update(this)
+  save() {
+    dataManager.update(this)
   }
 
 }

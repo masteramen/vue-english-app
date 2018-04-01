@@ -53,9 +53,7 @@
   import Lyric from 'lyric-parser'
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
-  import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle, getDict, configProvider} from 'common/js/service'
-  import {update} from 'common/js/data-manager'
+  import {createArticle, getDict} from 'common/js/service'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
   export default {

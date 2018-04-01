@@ -87,7 +87,7 @@
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {getSilent, createArticle, getDict, configProvider, saveArticleToRemote} from 'common/js/service'
+  import {createArticle, getDict, configProvider, saveArticleToRemote} from 'common/js/service'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
   import Bus from 'common/js/bus'
@@ -118,19 +118,16 @@
     created() {
       this.touch = {}
       Bus.$on('saveRemote', target => {
-        (async ()=>{
-          saveArticleToRemote(this.curArticle,this.currentLyric,this.lines);
+        (async () => {
+          saveArticleToRemote(this.curArticle, this.currentLyric, this.lines)
           alert('save success')
         })()
-
-      });
+      })
     },
     mounted() {
-      getSilent()
-
-        this.$nextTick(() => {
-          touchDir(this.$refs.lyricList.$el, dir => {
-            if (this.editMode) {
+      this.$nextTick(() => {
+        touchDir(this.$refs.lyricList.$el, dir => {
+          if (this.editMode) {
             if (!this.playing) {
               return
             }
@@ -154,8 +151,8 @@
 
             this.currentLyric.play(elips)
           }
-          })
         })
+      })
 
       this.$nextTick(() => {
         this.$refs.playerWrap.style['width'] = window.innerWidth + 'px'
@@ -241,7 +238,9 @@
         return this.lyricFollow ? '' : 'not-lyricFollow'
       },
       percent() {
-        return this.currentTime / this.curArticle.DURATION
+        let percent = this.currentTime / this.curArticle.DURATION
+        if (percent === +percent)Bus.$emit('percent', percent)
+        return percent
       },
       iconMode() {
         return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
@@ -325,11 +324,10 @@
         }
       },
       onDuration(e) {
-        if(!this.curArticle.DURATION){
+        if (!this.curArticle.DURATION) {
           this.curArticle.DURATION = e.detail
           this.curArticle.save()
         }
-
       },
       loop() {
         this.currentTime = 0
@@ -374,9 +372,10 @@
       },
       updateTime(e) {
         this.currentTime = e.target.currentTime
-        if (device.platform == 'iOS' && window.remoteControls && this.needUpdateRemoteControl) {
+        if (device.platform === 'iOS' && window.remoteControls && this.needUpdateRemoteControl) {
           setTimeout(() => {
-            let params = ['artist', this.curArticle.TITLE, 'album', this.curArticle.IMG_URL, this.curArticle.DURATION, this.currentTime]
+            let icon = this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
+            let params = ['学英语听新闻', this.curArticle.TITLE, '', icon, this.curArticle.DURATION, this.currentTime]
 
             window.remoteControls.updateMetas(success => {
               this.needUpdateRemoteControl = false
@@ -480,7 +479,7 @@
           })
       },
       handleLyric({ lineNum, txt }) {
-         console.log(txt)
+        console.log(txt)
         this.$nextTick(() => {
           this.currentLineNum = lineNum
           let curLine = this.$refs.lyricLine[lineNum]
@@ -536,6 +535,8 @@
         this.currentTime = 0
         player.pause()
         this.curArticle = currentArticle
+        Bus.$emit('play', currentArticle)
+
         this.$refs.lyricList.scrollTo(0, 0)
 
         if (this.currentLyric) {
@@ -544,9 +545,7 @@
           this.currentLyric = null
         }
 
-        getSilent().then(url => {
-          player.loopplay(url)
-        })
+        player.loopplay(cordova.file.applicationDirectory + 'www/silent.mp3')
 
         this.getLyric().then(() => {
           if (this.playing) {
