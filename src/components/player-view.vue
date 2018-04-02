@@ -24,6 +24,7 @@
           <div v-if="currentLyric" >
             <div  v-for="(line,index) in currentLyric.lines" >
               <p ref="lyricLine"
+                 :id="'line'+index"
                  class="text"
                  :class="{'current': currentLyric.curNum-1 ===index}"
                  v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
@@ -87,9 +88,10 @@
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {createArticle, getDict, configProvider, saveArticleToRemote} from 'common/js/service'
+  import {createArticle, getDict, configProvider, saveArticleToRemote, getDictListBy} from 'common/js/service'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
+
   import Bus from 'common/js/bus'
   export default {
     data() {
@@ -196,7 +198,7 @@
             $(this).addClass('mark')
             $(this).data('mark', true)
             $(this).find('b').remove()
-            getDict($(this).text().trim()).then(result => {
+            getDict($(this).text().trim().toLowerCase()).then(result => {
               let html = $(this).html().trim()
 
               $(this).html(`${html}<b>(${result.result})</b>`)
@@ -260,7 +262,23 @@
       handlerTS (index, line) {
         this.curArticle.translate(this.lines, index).then(result => {
           this.trlines.splice(index, 1, result)
-          this.$refs.lyricList.refresh();
+          this.$refs.lyricList.refresh()
+          var arr = this.lines[index].toLowerCase().match(/[a-z-]+/g).sort()
+          var unArr = arr.filter((e, i) => arr.indexOf(e) === i)
+          console.log(`unArr:${unArr}`)
+          $(`#line${index} span`,this.$refs.lyricList.$el).each(function () {
+            $(this).attr('value',$(this).text().toLowerCase())
+          });
+          getDictListBy(unArr).then(contents => {
+            console.log(`contents:${contents}`)
+            if(contents.length){
+              contents.forEach(d=>{
+                $(`#line${index} span[value=${d.QTEXT}]`,this.$refs.lyricList.$el).each(function () {
+                  $(this).html(`${$(this).text()}<b>(${d.RESULT})</b>`).addClass('mark');
+                });
+              })
+            }
+          })
         })
       },
       lyricPan(e) {

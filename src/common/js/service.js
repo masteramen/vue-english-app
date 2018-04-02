@@ -262,9 +262,8 @@ export class Article {
             await this.translate(lines, index)
           }
         }
-        //if (this.DURATION) this.LRC_OK = '2'
-        //else
-          this.LRC_OK = '3'
+        if (this.DURATION) this.LRC_OK = '2'
+        else this.LRC_OK = '3'
         needSave = true
       }
       if (needSave) {
@@ -328,7 +327,7 @@ import {decrypt2, encrypt2} from './crypto'
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {
-      return {text: dicts[0].QTEXT, result: dicts[0].RESULT, detail: dicts[0].DETAIL, audio: dicts[0].AUDIO}
+      return {text: dicts[0].QTEXT, result: dicts[0].RESULT, detail: dicts[0].DETAIL, audio: dicts[0].AUDIO,ADD_DATE: dicts[0].ADD_DATE}
     } else {
       return Promise.reject({'text': text})
     }
@@ -349,7 +348,13 @@ export function getDict(text) {
           return dict
         })
       }).then(dict => {
-        let dictObj = {qtext: dict.text, result: dict.result[0], detail: dict.dict && dict.dict[0] || '', audio: dict.audio}
+        let dictObj = {
+          qtext: dict.text,
+          result: dict.result[0],
+          detail: dict.dict && dict.dict[0] || '',
+          audio: dict.audio,
+          ADD_DATE: dict.ADD_DATE
+        }
         console.log(dictObj)
         dataManager.saveDict(dictObj)
         return dict
@@ -359,6 +364,16 @@ export function getDict(text) {
 }
 export function getDictList() {
   return dataManager.getDictList()
+}
+export function getDictListBy(list){
+
+  return dataManager.getDictListBy(list)
+
+}
+export function getRecentDictList(list){
+
+  return dataManager.getRecentDictList()
+
 }
 
 const axios = require('axios')

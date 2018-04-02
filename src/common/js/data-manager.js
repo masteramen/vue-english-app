@@ -14,7 +14,7 @@ function update(detail) {
   console.log(detail)
   return new Promise((resolve, reject) => {
     db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,AUTHOR=?,TOTAL=?,DURATION=?,LRC_OK=? WHERE REFERER=?',
-      detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '' , detail.LRC_OK || '', detail.REFERER || ''
+      detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.LRC_OK || '', detail.REFERER || ''
       , err => {
         console.log(err)
         resolve()
@@ -59,13 +59,13 @@ function isExist(DETAIL) {
     let sql = `SELECT *,count(1) as c FROM T_ARTICLE WHERE REFERER='${DETAIL.REFERER} group by REFERER'`
     console.log(sql)
     db.all(sql, (error, rows) => {
-      console.log('error:'+error);
-      console.log('rows:'+rows)
+      console.log('error:' + error)
+      console.log('rows:' + rows)
       if (error || rows.length === 0) {
         console.log(error)
         return reject(error)
       }
-      console.log('rows:'+JSON.stringify(rows))
+      console.log('rows:' + JSON.stringify(rows))
 
       return resolve(rows[0])
     })
@@ -90,17 +90,15 @@ function getContentLen(detail) {
 }
 
 async function getDetailPage(detailObj, item) {
-
-    if (item.url2io) {
-      await item.url2io(detailObj)
-    } else {
-      let response = await getResponse(detailObj.REFERER)
-      item.getDetail(response, detailObj)
-      if (!detailObj || !detailObj.URL) return detailObj
-      let totalBytes = await getContentLen(detailObj)
-      detailObj.TOTAL = totalBytes
-    }
-
+  if (item.url2io) {
+    await item.url2io(detailObj)
+  } else {
+    let response = await getResponse(detailObj.REFERER)
+    item.getDetail(response, detailObj)
+    if (!detailObj || !detailObj.URL) return detailObj
+    let totalBytes = await getContentLen(detailObj)
+    detailObj.TOTAL = totalBytes
+  }
 }
 
 function getArticlesBasicInfo(lastTime) {
@@ -123,7 +121,7 @@ function findById(id) {
   })
 }
 async function runJobs() {
-  let subscriptList = loadSubscriptionList().filter(e=>e.enable)
+  let subscriptList = loadSubscriptionList().filter(e => e.enable)
 
   for (let item of subscriptList) {
     let response = await getResponse(item.feedId)
@@ -173,7 +171,22 @@ function getDict(text) {
 
 function getDictList() {
   return new Promise((resolve, reject) => {
-    db.all(`select * from t_dict`, function(err, rows) {
+    db.all(`select * from t_dict order by qtext`, function(err, rows) {
+      if (err)console.log(err)
+      console.log(rows)
+      var contents = []
+
+      for (let i = 0; i < rows.length; i++) {
+        contents.push(rows.item(i))
+      }
+      console.log(contents)
+      resolve(contents)
+    })
+  })
+}
+function getRecentDictList() {
+  return new Promise((resolve, reject) => {
+    db.all(`select * from t_dict order by ADD_DATE desc limit 10`, function(err, rows) {
       if (err)console.log(err)
       console.log(rows)
       var contents = []
@@ -187,8 +200,24 @@ function getDictList() {
   })
 }
 
-function saveDict({qtext, result, detail, audio}) {
-  db.run('INSERT INTO T_dict (qtext,result,detail,audio) VALUES(?,?,?,?)', qtext, result, detail, audio
+export async function getDictListBy(list) {
+  return new Promise((resolve, reject) => {
+    let incause = list.map(k => `'${k}'`).join(',')
+    db.all(`select * from t_dict where qtext in(${incause})`, function(err, rows) {
+      if (err)console.log(err)
+      console.log(rows)
+      var contents = []
+
+      for (let i = 0; i < rows.length; i++) {
+        contents.push(rows.item(i))
+      }
+      console.log(contents)
+      resolve(contents)
+    })
+  })
+}
+function saveDict({qtext, result, detail, audio,ADD_DATE}) {
+  db.run('INSERT INTO T_dict (qtext,result,detail,audio,ADD_DATE) VALUES(?,?,?,?,ADD_DATE)', qtext, result, detail, audio
     , err => {
       console.log(err)
       if (err) {
@@ -216,5 +245,20 @@ function getConfigProvider() {
   }
   return storage
 }
-module.exports = {getArticlesBasicInfo, findById, getList, queue, getDetail, addConfig, runJobs, update, getDict, saveDict, getDictList, getConfigProvider}
+module.exports = {
+  getArticlesBasicInfo,
+  findById,
+  getList,
+  queue,
+  getDetail,
+  addConfig,
+  runJobs,
+  update,
+  getDict,
+  saveDict,
+  getDictList,
+  getConfigProvider,
+  getDictListBy,
+  getRecentDictList
+}
 
