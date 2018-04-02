@@ -260,6 +260,7 @@
       handlerTS (index, line) {
         this.curArticle.translate(this.lines, index).then(result => {
           this.trlines.splice(index, 1, result)
+          this.$refs.lyricList.refresh();
         })
       },
       lyricPan(e) {
@@ -536,7 +537,7 @@
         player.pause()
         this.curArticle = currentArticle
         Bus.$emit('play', currentArticle)
-
+        this.lyricFollow = this.curArticle.LRC_OK == '1'
         this.$refs.lyricList.scrollTo(0, 0)
 
         if (this.currentLyric) {
@@ -545,13 +546,13 @@
           this.currentLyric = null
         }
 
-        player.loopplay(cordova.file.applicationDirectory + 'www/silent.mp3')
+        player.loopplay('silent.mp3')
 
         this.getLyric().then(() => {
           if (this.playing) {
             this.loadingTitle = '正在加载音频'
             this.getAudio()
-          }
+          } else player.pause()
         })
       },
       songReady(value) {
@@ -572,6 +573,7 @@
       },
       playing(newPlaying) {
         if (newPlaying) {
+          player.loopplay('silent.mp3')
           if (this.songReady) {
             this.curArticle.getAudio().then(url => {
               newPlaying ? player.play(url) : player.pause()
@@ -592,6 +594,7 @@
           })
           this.setCurrentIndex(index)
         }
+        console.log(`this.currentIndex:${this.currentIndex}`)
         this.enableOrDisableScreenLock(value)
       }
 

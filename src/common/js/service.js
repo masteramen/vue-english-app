@@ -36,7 +36,7 @@ async function downloadLyric(article) {
 /*
 export async function getSilent() {
   return require('./../../../static/silent.mp3')
-}*/
+} */
 
 async function fileExist(file) {
   try {
@@ -155,20 +155,33 @@ let fixnum = n => {
   return (Array(2).join('0') + n).slice(-2)
 }
 
-function formate2Lyric(detailObj) {
+async function formate2Lyric(detailObj) {
   let duration = detailObj.DURATION || 6 * 60
   let text = detailObj.CONTENT
-
+  console.log(text)
   let timer = 0
   let str = `[ti:${detailObj.TITLE}]\r\n`
 
-  let lines = text.replace(/(;)/g, '$1\n').replace(/([.?!])[\s\n]+(?=[A-Z])/g, '$1|').split(/[|\n]+/).filter(n => n.trim())
-  let reLines = []
-  lines.forEach(line => {
-    if (reLines.length == 0 || reLines[reLines.length - 1].trim().length > 20)reLines.push(line)
-    else reLines[reLines.length - 1] = reLines[reLines.length - 1] + ' ' + line
-  })
-  lines = reLines
+  let lines = text
+    .replace(/(;)/g, '$1\n')
+    .replace(/(")/g, '\n$1\n')
+    .replace(/([.?!])(?=[A-Z\n\s])/g, '$1|')
+    .split(/[|\n]+/)
+    .filter(n => n.trim()).join('\n')
+    .replace(/(,)[\n\s]+/g, '$1')
+    // .replace(/"\n([\s\S]*?)\n"/g, '"$1"')
+    // .replace(/\n([a-z]{1,20}\.)\n/gi, '\n$1')
+    .replace(/(\s[a-z]{1,3}\.)\n(.{0,10}\.)/gi, '$1 $2')
+    .replace(/\n(.{1,10}\.)\n/gi, '\n$1 ')
+    .replace(/([A-Z]+.\n[A-Z]+\.)\s/gi, function(matchStr){
+      return matchStr.replace(/\n+/gm,'')+'\n'
+    })
+    .replace(/"[^"]+"/g,function(matchStr){
+      return matchStr.replace(/\n+/gm,' ').replace(/"\s+/g,'"')
+    })
+   // .replace(/"\n([^.]*\.)/gi, '" $1\n')
+
+    .split(/\n/)
 
   return (async () => {
     let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
@@ -189,6 +202,7 @@ function formate2Lyric(detailObj) {
     }
       // if (content.length > 1) { str += '\n' + content[1] }
     str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n')
+    console.log(lines)
     return [lines, str]
   })()
 }
@@ -209,15 +223,19 @@ export class Article {
     await dataManager.update(this)
   }
   async getLyric(translate) {
-    let lyric = ''
-    let lines = []
     await fs.ensure(`${this.ID}`)
 
     let path = `${this.ID}/${this.ID}.json`
     let jsonExist = await fs.exists(path)
-    if (!jsonExist) {
-      await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
+    if (this.LRC_OK != '1') {
+      if (!jsonExist || new Date().getTime() - this.LAST_DOWNLOAD_DATE > 3600000) {
+        await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
+        this.LAST_DOWNLOAD_DATE = new Date().getTime()
+      }
       console.log(this.CONTENT)
+      let lyric = ''
+      let lines = []
+      let needSave = false
       if (this.CONTENT && this.CONTENT.substring(0, 4) === '[ti:') {
         let split = this.CONTENT.split(/\n/)
         split.shift()
@@ -228,28 +246,41 @@ export class Article {
 
         for (let i = 0; i < transArr.length; i++) {
           let seq = `${this.ID}/${i}-tr.txt`
+          await fs.remove(seq,false)
           await fs.write(seq, transArr[i])
         }
         console.log(transArr)
         console.log(lyric)
         console.log(lines)
-      } else {
+        this.LRC_OK = '1'
+        needSave = true
+      } else if (this.LRC_OK !== '2') {
         [lines, lyric] = await formate2Lyric(this)
+        console.log(lines)
         if (translate) {
           for (let index = 0; index < lines.length; index++) {
             await this.translate(lines, index)
           }
         }
+        //if (this.DURATION) this.LRC_OK = '2'
+        //else
+          this.LRC_OK = '3'
+        needSave = true
       }
-      await fs.write(path, JSON.stringify([lines, lyric, this.DURATION]))
-      await dataManager.update(this)
-    } else {
-      let [lines, lyric, duration] = JSON.parse(await fs.read(path))
-      console.log(lines)
-      console.log(lyric)
-      console.log(duration)
-      return {lines, lyric}
+      if (needSave) {
+        await fs.remove(path,false)
+        await fs.write(path, JSON.stringify([lines, lyric, this.DURATION]))
+        console.log(this)
+        await dataManager.update(this)
+      }
     }
+    let fileContent = await fs.read(path)
+    console.log(fileContent)
+    let [lines, lyric, duration] = JSON.parse(fileContent)
+    console.log(lines)
+    console.log(lyric)
+    console.log(duration)
+    return {lines, lyric}
 
     return {lines, lyric}
   }

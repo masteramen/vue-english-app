@@ -106,6 +106,7 @@ export function getLatestArticles() {
         for (let i = 0; i < results.rows.length; i++) {
           contents.push(results.rows.item(i))
         }
+        console.log(contents)
         resolve({'code': 0, 'contents': contents})
       }, function (tx, error) {
         console.log(error)

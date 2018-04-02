@@ -85,7 +85,6 @@ function getInfoFromItem(el) {
     }
   }
 
-
   return {title, audio, pubDate, link}
 }
 export const rss = {
@@ -120,7 +119,7 @@ export const rss = {
 
     // let feed = `http://www.jfox.info/rss/?feed=${detailObj.FEED_ID.substring(rssFeedId.length)}&link=${detailObj.REFERER}&title=${detailObj.TITLE}`
 
-    let encryptStr = encrypt2(JSON.stringify({feed: detailObj.FEED_ID, link: detailObj.REFERER, title: detailObj.TITLE}))
+    let encryptStr = encrypt2(JSON.stringify({feed: detailObj.FEED_ID, link: detailObj.REFERER, title: detailObj.TITLE, lyric: detailObj.CONTENT ? 1 : 0}))
     let feed = `http://www.jfox.info/rss/?_e=${encodeURIComponent(encryptStr)}`
     return axios.get(feed, {}).then((res) => {
       let content = res.data.trim()
@@ -146,7 +145,8 @@ export const rss = {
         }).remove()
 
         $content.find('p,h1,h2,h3,h4,div').prepend('<br />\n')
-        detailObj.CONTENT = $content.text().trim()
+        content = $content.text().trim()
+        if (content)detailObj.CONTENT = content
         console.log(detailObj)
         return detailObj
       })

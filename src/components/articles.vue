@@ -103,7 +103,10 @@
       },
       handlerTSCNTITLE(item) {
         if (!item.TITLE_CN) {
-          item.tsTitle()
+          (async ()=>{
+            await item.tsTitle()
+            this.$refs.toplist.refresh();
+          })()
         }
       },
       onScroll(pos) {

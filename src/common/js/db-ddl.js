@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS t_article(
    AUDIO_URL        TEXT,
    TOTAL        ,
    VIDEO_URL        TEXT,
-   LRC_URL        TEXT,
+   LRC_OK        TEXT,
    DURATION        TEXT,
    ORG_SITE       TEXT,
    REFERER        TEXT UNIQUE NOT NULL,
@@ -17,7 +17,8 @@ CREATE TABLE IF NOT EXISTS t_article(
    POST_DATE  TEXT,
    STATUS  TEXT DEFAULT 'A',
    FEED_ID    TEXT,
-   FEED_TYPE    TEXT
+   FEED_TYPE    TEXT,
+   LAST_DOWNLOAD_DATE TEXT
 )
 `
 const dictDDL = `

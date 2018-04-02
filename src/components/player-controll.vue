@@ -15,7 +15,7 @@
         <div class="icon itmes" @click="open">
           <div class="control" >
             <progress-circle :radius="radius" :percent="percent">
-              <img  class="icon-mini"  width="40" height="40" :src="logo">
+              <img  class="icon-mini"  :class="{play:playing,pause:!playing}" width="40" height="40" :src="logo">
             </progress-circle>
           </div>
         </div>
@@ -27,9 +27,6 @@
           <span class="icon-user" ></span>
           <p class="text">设置</p>
         </router-link>
-
-
-
         <div class="line" style="height:10px;height: constant(safe-area-inset-bottom);height: env(safe-area-inset-bottom);"></div>
       </div>
   </div>
@@ -62,7 +59,8 @@
     computed: {
 
       ...mapGetters([
-        'fullScreen'
+        'fullScreen',
+        'playing'
       ]),
       logo(){
         return this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png');

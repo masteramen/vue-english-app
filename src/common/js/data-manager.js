@@ -13,9 +13,8 @@ db.run(dbDDL.dictDDL)
 function update(detail) {
   console.log(detail)
   return new Promise((resolve, reject) => {
-    db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,LRC_URL=?,AUTHOR=?,TOTAL=?,DURATION=? WHERE REFERER=?',
-      detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '',
-      detail.LRC_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.REFERER || ''
+    db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,AUTHOR=?,TOTAL=?,DURATION=?,LRC_OK=? WHERE REFERER=?',
+      detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '' , detail.LRC_OK || '', detail.REFERER || ''
       , err => {
         console.log(err)
         resolve()
@@ -25,9 +24,9 @@ function update(detail) {
 
 function insert(DETAIL) {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,LRC_URL,POST_DATE,AUTHOR,TOTAL,FEED_ID,FEED_TYPE) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)',
+    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,POST_DATE,AUTHOR,TOTAL,FEED_ID,FEED_TYPE) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
       DETAIL.TITLE || '', DETAIL.CONTENT || '', DETAIL.AUDIO_URL || '', DETAIL.IMG_URL || '', DETAIL.ORG_SITE || '',
-      DETAIL.REFERER || '', DETAIL.LRC_URL || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID, DETAIL.FEED_TYPE
+      DETAIL.REFERER || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID, DETAIL.FEED_TYPE
       , err => {
         console.log(err)
         if (err) {
@@ -107,7 +106,7 @@ async function getDetailPage(detailObj, item) {
 function getArticlesBasicInfo(lastTime) {
   console.log(lastTime)
   let fromTime = lastTime || 1
-  console.log(`SELECT ID,TITLE,TITLE_CN,POST_DATE,AUTHOR,referer,TOTAL FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`)
+  console.log(`SELECT ID,TITLE,TITLE_CN,POST_DATE,AUTHOR,referer,TOTAL,LRC_OK FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`)
   return new Promise((resolve, reject) => {
     db.all(`SELECT id,org_site,title,POST_DATE,AUTHOR,referer ,IMG_URL,AUDIO_URL,TOTAL FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`, function(err, all) {
       if (err)console.log(err)
