@@ -186,7 +186,7 @@ function getDictList() {
 }
 function getRecentDictList() {
   return new Promise((resolve, reject) => {
-    db.all(`select * from t_dict order by ADD_DATE desc limit 10`, function(err, rows) {
+    db.all(`select * from t_dict order by ADD_DATE desc limit 5`, function(err, rows) {
       if (err)console.log(err)
       console.log(rows)
       var contents = []
@@ -199,7 +199,14 @@ function getRecentDictList() {
     })
   })
 }
-
+export  async function removeDict(item){
+  return new Promise((resolve, reject) => {
+    db.all(`delete from t_dict where qtext='${item.QTEXT}'`, function(err, rows) {
+      if (err)console.log(err)
+      resolve()
+    })
+  })
+}
 export async function getDictListBy(list) {
   return new Promise((resolve, reject) => {
     let incause = list.map(k => `'${k}'`).join(',')
@@ -217,7 +224,7 @@ export async function getDictListBy(list) {
   })
 }
 function saveDict({qtext, result, detail, audio,ADD_DATE}) {
-  db.run('INSERT INTO T_dict (qtext,result,detail,audio,ADD_DATE) VALUES(?,?,?,?,ADD_DATE)', qtext, result, detail, audio
+  db.run('INSERT INTO T_dict (qtext,result,detail,audio,ADD_DATE) VALUES(?,?,?,?,?)', qtext, result, detail, audio,ADD_DATE
     , err => {
       console.log(err)
       if (err) {
@@ -259,6 +266,7 @@ module.exports = {
   getDictList,
   getConfigProvider,
   getDictListBy,
-  getRecentDictList
+  getRecentDictList,
+  removeDict
 }
 

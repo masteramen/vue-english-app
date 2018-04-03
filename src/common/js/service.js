@@ -2,6 +2,7 @@ import Queue from 'common/js/promise-queue'
 import CordovaPromiseFS from 'common/js/promise-fs'
 import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
+
 const dataManager = require('./data-manager')
 
 const fs = CordovaPromiseFS({
@@ -116,9 +117,9 @@ async function downloadAudio(article, onProgress, downLoadQueue) {
   return nativeUrl
 }
 
-let downLoadQueue = new Queue(2, Infinity, true)
-let downLoadLyricQueue = new Queue(1)
-let downloadTranslateQ = new Queue(1)
+let downLoadQueue = new Queue(3, Infinity, true)
+let downLoadLyricQueue = new Queue(2)
+let downloadTranslateQ = new Queue(2)
 export async function downloadAllArticles(articles, cancel) {
   for (let article of articles) {
     try {
@@ -164,20 +165,21 @@ async function formate2Lyric(detailObj) {
 
   let lines = text
     .replace(/(;)/g, '$1\n')
-    .replace(/(")/g, '\n$1\n')
-    .replace(/([.?!])(?=[A-Z\n\s])/g, '$1|')
-    .split(/[|\n]+/)
-    .filter(n => n.trim()).join('\n')
-    .replace(/(,)[\n\s]+/g, '$1')
+   // .replace(/(")/g, '\n$1\n')
+    .replace(/([^A-Z]+[.?!])[\s\n]+(?=[A-Z])/g, '$1\n')
+    .replace(/([a-z0-9]+\.)(?=[A-Z])/g, '$1\n')
+    .replace(/([".]\s+)(?=[A-Z][a-z]+)/g, '$1\n')
+    .replace(/\n+/g, '\n')
+    //.replace(/(,)[\n\s]+/g, '$1')
     // .replace(/"\n([\s\S]*?)\n"/g, '"$1"')
     // .replace(/\n([a-z]{1,20}\.)\n/gi, '\n$1')
-    .replace(/(\s[a-z]{1,3}\.)\n(.{0,10}\.)/gi, '$1 $2')
-    .replace(/\n(.{1,10}\.)\n/gi, '\n$1 ')
-    .replace(/([A-Z]+.\n[A-Z]+\.)\s/gi, function(matchStr){
-      return matchStr.replace(/\n+/gm,'')+'\n'
+    // .replace(/(\s[a-z]{1,3}\.)\n(.{0,10}\.)/gi, '$1 $2')
+   // .replace(/\n(.{1,10}\.)\n/gi, '\n$1 ')
+    .replace(/([A-Z]+.\n[A-Z]+\.)\s/gi, function(matchStr) {
+      return matchStr.replace(/\n+/gm, '') + ' '
     })
-    .replace(/"[^"]+"/g,function(matchStr){
-      return matchStr.replace(/\n+/gm,' ').replace(/"\s+/g,'"')
+    .replace(/"[^"]+"/g, function(matchStr) {
+      return matchStr.replace(/\n+/gm, ' ').replace(/"\s+/g, '"')
     })
    // .replace(/"\n([^.]*\.)/gi, '" $1\n')
 
@@ -229,8 +231,13 @@ export class Article {
     let jsonExist = await fs.exists(path)
     if (this.LRC_OK != '1') {
       if (!jsonExist || new Date().getTime() - this.LAST_DOWNLOAD_DATE > 3600000) {
-        await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
-        this.LAST_DOWNLOAD_DATE = new Date().getTime()
+        try{
+          await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
+          this.LAST_DOWNLOAD_DATE = new Date().getTime()
+        }catch (e){
+          console.log(e)
+        }
+
       }
       console.log(this.CONTENT)
       let lyric = ''
@@ -246,7 +253,7 @@ export class Article {
 
         for (let i = 0; i < transArr.length; i++) {
           let seq = `${this.ID}/${i}-tr.txt`
-          await fs.remove(seq,false)
+          await fs.remove(seq, false)
           await fs.write(seq, transArr[i])
         }
         console.log(transArr)
@@ -263,11 +270,12 @@ export class Article {
           }
         }
         if (this.DURATION) this.LRC_OK = '2'
-        else this.LRC_OK = '3'
+        else
+          this.LRC_OK = '3'
         needSave = true
       }
       if (needSave) {
-        await fs.remove(path,false)
+        await fs.remove(path, false)
         await fs.write(path, JSON.stringify([lines, lyric, this.DURATION]))
         console.log(this)
         await dataManager.update(this)
@@ -327,7 +335,7 @@ import {decrypt2, encrypt2} from './crypto'
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {
-      return {text: dicts[0].QTEXT, result: dicts[0].RESULT, detail: dicts[0].DETAIL, audio: dicts[0].AUDIO,ADD_DATE: dicts[0].ADD_DATE}
+      return {text: dicts[0].QTEXT, result: dicts[0].RESULT, detail: dicts[0].DETAIL, audio: dicts[0].AUDIO, ADD_DATE: dicts[0].ADD_DATE}
     } else {
       return Promise.reject({'text': text})
     }
@@ -362,18 +370,17 @@ export function getDict(text) {
     })
   })
 }
+export function removeDict(item) {
+  return dataManager.removeDict(item)
+}
 export function getDictList() {
   return dataManager.getDictList()
 }
-export function getDictListBy(list){
-
+export function getDictListBy(list) {
   return dataManager.getDictListBy(list)
-
 }
-export function getRecentDictList(list){
-
+export function getRecentDictList(list) {
   return dataManager.getRecentDictList()
-
 }
 
 const axios = require('axios')

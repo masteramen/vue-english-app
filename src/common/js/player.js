@@ -71,10 +71,11 @@ class Player {
       }
       this.my_media = new Media(url,
         () => {
-          this.audio.dispatchEvent(new Event('ended'))
-
           console.log('playAudio():Audio Success')
           if (this.timer) clearInterval(this.timer)
+          this.audio.dispatchEvent(new Event('ended'))
+
+
           // this.my_media.getCurrentPosition(
           //   position => {
           //    console.log(`position:${position} && this.my_media.getDuration():${this.my_media.getDuration()}`)

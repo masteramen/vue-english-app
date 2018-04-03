@@ -1,5 +1,6 @@
 <template>
-  <page :title="'生词('+dictList.length+')'" class="words" >
+  <page :title="'生词('+dictList.length+')'" class="words"  :menuTxt="menuTxt" :menuIcon="menuIcon" @menu="toggleEdit">
+
     <div class="listCon">
     <scroll class="listview" :data="data" ref="listview" :listenScroll="listenScroll" @scroll="scroll" :probeType="probeType"   :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
       <div>
@@ -11,8 +12,8 @@
             <h2 class="list-group-title">{{group.title}}</h2>
             <ul>
               <li v-for="item in group.items" class="list-group-item" @click="selectItem(item)">
-                <div><span>{{item.QTEXT}}</span> - {{item.RESULT}}<br /></div>
-                <div style="padding-top:10px;color:#777;font-size:80%;">{{item.DETAIL}}</div>
+                <div><span>{{item.QTEXT}}</span> - {{item.RESULT}}<i class="icon-delete" @click="deletDict(item)" style="font-size:100%;float:right;" v-if="menuTxt=='完成'"></i></div>
+                <div style="padding-top:10px;padding-top:10px;color:#777;font-size:80%;">{{item.DETAIL}}</div>
               </li>
             </ul>
           </li>
@@ -35,7 +36,7 @@
 <script type="text/ecmascript-6">
   import Scroll from 'base/scroll2/scroll'
   import {getData} from 'common/js/dom'
-  import {configProvider, getDictList,getRecentDictList} from 'common/js/service'
+  import {configProvider, getDictList,getRecentDictList,removeDict} from 'common/js/service'
   const ANCHOR_HEIGHT = 18
   const TITLE_HEIGHT = 30
 
@@ -61,7 +62,9 @@
           stop: 60
         },
         dictList: [],
-        recentList: []
+        recentList: [],
+        menuIcon:'icon-edit',
+        menuTxt:'编辑'
       }
     },
     computed: {
@@ -97,6 +100,25 @@
       }
     },
     methods: {
+      deletDict(item){
+        let list1=this.dictList.filter(x=>x.QTEXT===item.QTEXT)
+        list1.forEach(x=>{
+          this.dictList.splice(this.dictList.indexOf(x),1)
+
+
+        })
+
+        let list2=this.recentList.filter(x=>x.QTEXT===item.QTEXT)
+        list2.forEach(x=>{
+          this.recentList.splice(this.recentList.indexOf(x),1)
+
+        })
+        removeDict(item)
+      },
+      toggleEdit(){
+       if(this.menuTxt=='编辑')this.menuTxt="完成"
+        else this.menuTxt="编辑"
+      },
       onPullingDown(isPullingDown) {
         console.log(isPullingDown)
         if (isPullingDown) {
@@ -218,12 +240,14 @@
 <style scoped lang="stylus" rel="stylesheet/stylus">
   @import "~common/stylus/variable"
   .words
+    background: $color-background
+    z-index: 1000 !important
     width: 100%
     .listCon
       position: absolute;
       width: 100%;
       top: 44px;
-      bottom: 60px;
+      bottom: 0;
   .listview
     position: relative
     width: 100%
@@ -274,6 +298,7 @@
     top: 0
     left: 0
     width: 100%
+    z-index :1
     .fixed-title
       height: 30px
       line-height: 30px

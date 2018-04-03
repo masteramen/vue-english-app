@@ -46,7 +46,7 @@
         <span class="dot" :class="{'active': currentShow==='lyric'}"></span>
         <span class="dot" :class="{'active': currentShow==='cd'}"></span>
       </div>
-      <div class="progress-wrapper">
+      <div class="progress-wrapper" @touchmove.prevent.stop="$event.preventDefault()" @touchstart.prevent.stop="$event.preventDefault()"  @touchend.prevent.stop="$event.preventDefault()">
         <span class="time time-l">{{format(currentTime)}}</span>
         <div class="progress-bar-wrapper">
           <progress-bar :percent="percent" @percentChange="onProgressBarChange"></progress-bar>
@@ -266,16 +266,16 @@
           var arr = this.lines[index].toLowerCase().match(/[a-z-]+/g).sort()
           var unArr = arr.filter((e, i) => arr.indexOf(e) === i)
           console.log(`unArr:${unArr}`)
-          $(`#line${index} span`,this.$refs.lyricList.$el).each(function () {
-            $(this).attr('value',$(this).text().toLowerCase())
-          });
+          $(`#line${index} span`, this.$refs.lyricList.$el).each(function () {
+            $(this).attr('value', $(this).text().toLowerCase())
+          })
           getDictListBy(unArr).then(contents => {
             console.log(`contents:${contents}`)
-            if(contents.length){
-              contents.forEach(d=>{
-                $(`#line${index} span[value=${d.QTEXT}]`,this.$refs.lyricList.$el).each(function () {
-                  $(this).html(`${$(this).text()}<b>(${d.RESULT})</b>`).addClass('mark');
-                });
+            if (contents.length) {
+              contents.forEach(d => {
+                $(`#line${index} span[value=${d.QTEXT}]`, this.$refs.lyricList.$el).each(function () {
+                  $(this).html(`${$(this).text()}<b>(${d.RESULT})</b>`).addClass('mark')
+                })
               })
             }
           })
@@ -360,7 +360,7 @@
           this.loop()
         } else {
           let index = this.currentIndex + 1
-          if (index === this.playlist.length) {
+          if (index === window.sequenceList.length) {
             index = 0
           }
 
@@ -374,7 +374,7 @@
         } else {
           let index = this.currentIndex - 1
           if (index === -1) {
-            index = this.playlist.length - 1
+            index = window.sequenceList.length - 1
           }
           this.setCurrentIndex(index)
         }
@@ -449,28 +449,31 @@
         if (!this.songReady) {
           this.loadingTitle = '正在加载音频'
           let id = this.curArticle.ID
-          this.curArticle.getAudio(progressEvt => {
-            if (this.curArticle.ID === id) {
-              if (progressEvt.lengthComputable) {
-                let percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
-                this.loadingTitle = `正在加载音频 ${percent}%`
+          return (async () => {
+            try {
+              let audioUrl = await this.curArticle.getAudio(progressEvt => {
+                if (this.curArticle.ID === id) {
+                  if (progressEvt.lengthComputable) {
+                    let percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
+                    this.loadingTitle = `正在加载音频 ${percent}%`
+                  }
+                }
+              })
+              console.log('download audioUrl Success')
+              this.songReady = true
+              this.loadingTitle = ''
+            } catch (err) {
+              console.log(err)
+              if (err && err.desc) {
+                this.loadingTitle = `加载音频发生错误 :${err.desc}`
+              }
+              if (!err || err.code != 0) {
+                setTimeout(_ => {
+                  this.error()
+                }, 3000)
               }
             }
-          }).then(audioUrl => {
-            console.log('download audioUrl Success')
-            this.songReady = true
-            this.loadingTitle = ''
-          }).catch(err => {
-            console.log(err)
-            if (err && err.desc) {
-              this.loadingTitle = `加载音频发生错误 :${err.desc}`
-            }
-            if (!err || err.code != 0) {
-              setTimeout(_ => {
-                this.error()
-              }, 3000)
-            }
-          })
+          })()
         }
       },
       getLyric: function () {
@@ -549,7 +552,7 @@
     watch: {
       currentIndex(newIndex, oldIndex) {
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
-        if (!currentArticle || !currentArticle.isAudio()) return
+        if (newIndex === 0) { if (!currentArticle || !currentArticle.isAudio()) return }
         this.songReady = false
         this.currentTime = 0
         player.pause()
@@ -564,14 +567,19 @@
           this.currentLyric = null
         }
 
-        player.loopplay('silent.mp3')
-
-        this.getLyric().then(() => {
-          if (this.playing) {
-            this.loadingTitle = '正在加载音频'
-            this.getAudio()
-          } else player.pause()
-        })
+        player.loopplay('silent.mp3');
+        (async () => {
+          try {
+            await this.getLyric()
+            if (this.playing) {
+              this.loadingTitle = '正在加载音频'
+              await this.getAudio()
+            } else player.pause()
+          } catch (e) {
+            console.log(e)
+            this.next()
+          }
+        })()
       },
       songReady(value) {
         if (value) {
