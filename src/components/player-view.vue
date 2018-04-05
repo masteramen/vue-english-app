@@ -29,7 +29,7 @@
                  :class="{'current': currentLyric.curNum-1 ===index}"
                  v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
               </p>
-              <lazy-component @show="handlerTS(index,line)" class="text" v-if="reload" >
+              <lazy-component @show="handlerTS(index,line)" class="text" v-if="LRC" >
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
               </lazy-component>
             </div>
@@ -71,7 +71,7 @@
         </div>
       </div>
     </div>
-    <div ref="audio" :src="curArticle.AUDIO_URL" :title="curArticle.TITLE" @duration="onDuration" @canplay="ready" @error="error" @timeupdate="updateTime" @ended="end"></div>
+    <div ref="audio" :src="curArticle.AUDIO_URL" :title="curArticle.TITLE" @duration="onDuration" @error="error" @timeupdate="updateTime" @ended="end"></div>
     <audio ref="wordAudio" style="display:none;" ></audio>
   </div>
   </div>
@@ -93,12 +93,13 @@
   import AdminMenu from './m-header/admin-menu'
 
   import Bus from 'common/js/bus'
+
   export default {
     data() {
       return {
         config: configProvider.getConfig(),
         curArticle: createArticle({}),
-        songReady: false,
+        status: 0,
         currentTime: 0,
         duration: 0,
         radius: 32,
@@ -112,7 +113,8 @@
         lastSwipeTime: '',
         showLoading: true,
         loadingTitle: '',
-        reload: true,
+        LRC: false,
+        AUDIO_URL: false,
         trlines: [],
         lines: []
       }
@@ -125,6 +127,9 @@
           alert('save success')
         })()
       })
+
+      document.addEventListener('resume', this.onFront, false)
+      document.addEventListener('pause', this.onBackGround, false)
     },
     mounted() {
       this.$nextTick(() => {
@@ -259,6 +264,12 @@
       ])
     },
     methods: {
+      onBackGround() {
+        this.frontEnd = false
+      },
+      onFront() {
+        this.frontEnd = true
+      },
       handlerTS (index, line) {
         this.curArticle.translate(this.lines, index).then(result => {
           this.trlines.splice(index, 1, result)
@@ -280,33 +291,6 @@
             }
           })
         })
-      },
-      lyricPan(e) {
-        console.log(e)
-      },
-      lyricTouchStart(e) {
-        const touch = e.touches[0]
-        this.touch.startY = touch.pageY
-      },
-      lyricTouchEnd(e) {
-        const touch = e.touches[0]
-        this.touch.direction = touch.pageY - this.touch.startY
-        console.log(this.touch.direction)
-      },
-      scrollLyricEnd(pos) {
-        if (!this.playing) {
-          return
-        }
-        let lineNum = (this.currentLyric.curNum || 1) - 1
-        let curLine = this.$refs.lyricLine[lineNum]
-
-        if (this.lyricFollow) {
-          if ($(curLine).offset().top < $('.middle').offset().top ||
-            $(curLine).offset().top + $(curLine).height() > $('.middle').offset().top + $('.middle').height()
-          ) {
-            this.$refs.lyricList.scrollToElement(curLine, 1000)
-          }
-        }
       },
       back() {
         this.setFullScreen(false)
@@ -379,22 +363,15 @@
           this.setCurrentIndex(index)
         }
       },
-      ready() {
-        console.log('ready....')
-        this.songReady = true
-      },
       error() {
         console.log('error')
-        // this.songReady = true
         this.next()
-        // this.togglePlaying()
       },
       updateTime(e) {
         this.currentTime = e.target.currentTime
         if (device.platform === 'iOS' && window.remoteControls && this.needUpdateRemoteControl) {
           setTimeout(() => {
-            let icon = this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
-            let params = ['学英语听新闻', this.curArticle.TITLE, '', icon, this.curArticle.DURATION, this.currentTime]
+            let params = ['学英语听新闻', this.curArticle.TITLE, '', this.icon, this.curArticle.DURATION, this.currentTime]
 
             window.remoteControls.updateMetas(success => {
               this.needUpdateRemoteControl = false
@@ -446,59 +423,51 @@
         this.setCurrentIndex(index)
       },
       getAudio() {
-        if (!this.songReady) {
-          this.loadingTitle = '正在加载音频'
-          let id = this.curArticle.ID
-          return (async () => {
-            try {
-              let audioUrl = await this.curArticle.getAudio(progressEvt => {
-                if (this.curArticle.ID === id) {
-                  if (progressEvt.lengthComputable) {
-                    let percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
-                    this.loadingTitle = `正在加载音频 ${percent}%`
-                  }
+        if (this.AUDIO_URL) return this.AUDIO_URL
+        return (async () => {
+          try {
+            this.loadingTitle = '正在加载音频'
+            let id = this.curArticle.ID
+            let audioUrl = await this.curArticle.getAudio(progressEvt => {
+              if (this.curArticle.ID === id) {
+                if (progressEvt.lengthComputable) {
+                  let percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
+                  this.loadingTitle = `正在加载音频 ${percent}%`
                 }
-              })
-              console.log('download audioUrl Success')
-              this.songReady = true
-              this.loadingTitle = ''
-            } catch (err) {
-              console.log(err)
-              if (err && err.desc) {
-                this.loadingTitle = `加载音频发生错误 :${err.desc}`
               }
-              if (!err || err.code != 0) {
-                setTimeout(_ => {
-                  this.error()
-                }, 3000)
-              }
+            })
+            this.loadingTitle = ''
+            this.AUDIO_URL = audioUrl
+            return audioUrl
+          } catch (err) {
+            console.log(err)
+            if (err && err.desc) {
+              this.loadingTitle = `加载音频发生错误 :${err.desc}`
             }
-          })()
-        }
+            throw err
+          }
+        })()
       },
       getLyric: function () {
-        this.loadingTitle = '正在加载内容'
-        let id = this.curArticle.ID
-        return this.curArticle.getLyric()
-          .then(({lines, lyric}) => {
-            if (id !== this.curArticle.ID) return
-            this.lines = lines
-            this.trlines = [...Array(lines.length)].map((_, i) => false)
-            this.reload = false
-            this.$nextTick(() => {
-              setTimeout(_ => {
-                this.reload = true
-              }, 500)
-            })
-            if (this.currentLyric) {
-              this.currentLyric.stop()
-              delete this.currentLyric
-            }
-            this.loadingTitle = ''
-            if (lyric) this.currentLyric = new Lyric(lyric, this.handleLyric)
-            console.log(lyric)
-            console.log(this.currentLyric)
-          })
+        if (this.LRC) return
+        return (async () => {
+          this.loadingTitle = '正在加载内容'
+          let id = this.curArticle.ID
+          let {lines, lyric} = await this.curArticle.getLyric()
+          if (id !== this.curArticle.ID) return
+          this.lines = lines
+          this.trlines = [...Array(lines.length)].map((_, i) => false)
+          this.LRC = true
+
+          if (this.currentLyric) {
+            this.currentLyric.stop()
+            delete this.currentLyric
+          }
+          this.loadingTitle = ''
+          if (lyric) this.currentLyric = new Lyric(lyric, this.handleLyric)
+          console.log(lyric)
+          console.log(this.currentLyric)
+        })()
       },
       handleLyric({ lineNum, txt }) {
         console.log(txt)
@@ -522,21 +491,6 @@
         }
         return num
       },
-      _getPosAndScale() {
-        const targetWidth = 40
-        const paddingLeft = 40
-        const paddingBottom = 30
-        const paddingTop = 80
-        const width = window.innerWidth * 0.8
-        const scale = targetWidth / width
-        const x = -(window.innerWidth / 2 - paddingLeft)
-        const y = window.innerHeight - paddingTop - width / 2 - paddingBottom
-        return {
-          x,
-          y,
-          scale
-        }
-      },
       ...mapMutations({
         setFullScreen: 'SET_FULL_SCREEN',
         setPlayingState: 'SET_PLAYING_STATE',
@@ -553,27 +507,26 @@
       currentIndex(newIndex, oldIndex) {
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
         if (newIndex === 0) { if (!currentArticle || !currentArticle.isAudio()) return }
-        this.songReady = false
+
+        this.LRC = false
+        this.AUDIO_URL = false
         this.currentTime = 0
         player.pause()
+        if (this.currentLyric) this.currentLyric.togglePlay()
+        this.currentLyric = null
         this.curArticle = currentArticle
         Bus.$emit('play', currentArticle)
         this.lyricFollow = this.curArticle.LRC_OK == '1'
         this.$refs.lyricList.scrollTo(0, 0)
-
-        if (this.currentLyric) {
-          // this.currentLyric.seek(0)
-          this.currentLyric.stop()
-          this.currentLyric = null
-        }
-
+        this.icon = this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
         player.loopplay('silent.mp3');
         (async () => {
           try {
             await this.getLyric()
             if (this.playing) {
               this.loadingTitle = '正在加载音频'
-              await this.getAudio()
+              let audioUrl = await this.getAudio()
+              if (this.playing)player.play(audioUrl)
             } else player.pause()
           } catch (e) {
             console.log(e)
@@ -581,36 +534,19 @@
           }
         })()
       },
-      songReady(value) {
-        if (value) {
-          if (this.playing) {
-            this.curArticle.getAudio().then(url => {
-              player.play(url, this.currentTime)
-              console.log('play..............')
-              console.log(this.currentTime)
-              console.log(this.currentLyric)
-              if (this.currentLyric) this.currentLyric.play(this.currentTime)
-            })
-          }
-        } else {
-          player.pause()
-          if (this.currentLyric) this.currentLyric.stop()
-        }
-      },
       playing(newPlaying) {
         if (newPlaying) {
-          player.loopplay('silent.mp3')
-          if (this.songReady) {
-            this.curArticle.getAudio().then(url => {
-              newPlaying ? player.play(url) : player.pause()
-              this.currentLyric.togglePlay()
-            })
-          } else {
-            this.getAudio()
-          }
+          player.loopplay('silent.mp3');
+          (async () => {
+            await this.getLyric()
+            let audioUrl = await this.getAudio()
+            console.log(`play audio:${audioUrl}`)
+            if (this.playing)player.play(audioUrl, this.currentTime)
+            this.currentLyric.togglePlay()
+          })()
         } else {
           player.pause()
-          if (this.currentLyric) this.currentLyric.stop()
+          if (this.currentLyric) this.currentLyric.togglePlay()
         }
       },
       fullScreen(value) {

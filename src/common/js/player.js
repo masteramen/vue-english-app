@@ -119,7 +119,6 @@ class Player {
       }
       this.my_media.play()
 
-      // this.audio.dispatchEvent(new Event('canplay'))
       if (this.timer) clearInterval(this.timer)
 
       this.timer = setInterval(() => {

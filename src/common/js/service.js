@@ -165,10 +165,11 @@ async function formate2Lyric(detailObj) {
 
   let lines = text
     .replace(/(;)/g, '$1\n')
-   // .replace(/(")/g, '\n$1\n')
+    .replace(/(")/g, '\n$1\n')
     .replace(/([^A-Z]+[.?!])[\s\n]+(?=[A-Z])/g, '$1\n')
     .replace(/([a-z0-9]+\.)(?=[A-Z])/g, '$1\n')
     .replace(/([".]\s+)(?=[A-Z][a-z]+)/g, '$1\n')
+    .replace(/([?.]\s*")(?=[A-Z][a-z]+)/g, '$1\n')
     .replace(/\n+/g, '\n')
     //.replace(/(,)[\n\s]+/g, '$1')
     // .replace(/"\n([\s\S]*?)\n"/g, '"$1"')
@@ -181,7 +182,9 @@ async function formate2Lyric(detailObj) {
     .replace(/"[^"]+"/g, function(matchStr) {
       return matchStr.replace(/\n+/gm, ' ').replace(/"\s+/g, '"')
     })
-   // .replace(/"\n([^.]*\.)/gi, '" $1\n')
+    .replace(/("\n+\s*)(?=[a-z0-9]+)/g, '" ')
+    .replace(/([a-z0-9]+)\s*\n+\s*"/g, '$1 "')
+    // .replace(/"\n([^.]*\.)/gi, '" $1\n')
 
     .split(/\n/)
 
@@ -269,8 +272,8 @@ export class Article {
             await this.translate(lines, index)
           }
         }
-        if (this.DURATION) this.LRC_OK = '2'
-        else
+       // if (this.DURATION) this.LRC_OK = '2'
+       // else
           this.LRC_OK = '3'
         needSave = true
       }

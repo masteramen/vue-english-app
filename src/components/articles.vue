@@ -12,9 +12,9 @@
                   <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
                   <div class="sequenceList">
                     <div class="song">
-                      <div> <span>{{song.TITLE}}</span></div>
+                      <div>{{song.TITLE}}</div>
                       <lazy-component @show="handlerTSCNTITLE(song)" v-if="reload">
-                        <span>{{song.TITLE_CN}}</span>
+                        {{song.TITLE_CN}}
                       </lazy-component>
                     </div>
 
@@ -286,9 +286,10 @@
           overflow: hidden
           font-size: $font-size-small
           .song
-            font-size: 150%
-            line-height: 1.5em
+            font-size: 16px
+            line-height: 130%
             padding-top:10px
+            color:#666
           .summary
             margin:10px 0
             line-height :1.5em
