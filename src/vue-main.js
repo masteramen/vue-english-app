@@ -53,27 +53,6 @@ new Vue({
   template: '<app/>' // app is registered in vue-swipe-router which is used in router.js
 })
 
-var admobid = {}
-// select the right Ad Id according to platform
-if (/(android)/i.test(navigator.userAgent)) {
-  admobid = { // for Android
-
-  }
-} else if (/(ipod|iphone|ipad)/i.test(navigator.userAgent)) {
-  admobid = { // for iOS
-    banner: 'ca-app-pub-9477174171188196/3994804736',
-    interstitial: 'ca-app-pub-9477174171188196/4534780651',
-    reward: 'ca-app-pub-9477174171188196/1480353851'
-  }
-} else {
-  admobid = { // for Windows Phone
-
-  }
-}
-
-if (AdMob) {
-  AdMob.prepareInterstitial({adId: admobid.interstitial, autoShow: false})
-}
 
 // show the interstitial later, e.g. at end of game level
 // setTimeout(_=>{if(AdMob) AdMob.showInterstitial();},5000)

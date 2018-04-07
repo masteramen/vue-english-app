@@ -1,8 +1,10 @@
 <template>
     <div class="_cover-top">
         <div class="other">
+          <div class="loading-container" v-show="downloadAll" style="width:20px;height:20px;overflow: hidden;position: absolute;top:2px;left:-30px;">
+            <loading></loading>
+          </div>
             <span :class="downloadAllIcon" class="icon" v-show="$route.path==='/list'" @click.stop="tap()">
-
             </span>
 
 
@@ -20,6 +22,7 @@
 <script>
 import Bus from 'common/js/bus'
 import {mapActions, mapGetters} from 'vuex'
+import Loading from 'base/loading/loading'
 export default {
 
     data() {
@@ -63,6 +66,9 @@ export default {
   ...mapGetters([
     'downloadAll'
   ])
+  },
+  components: {
+    Loading
   }
 }
 </script>

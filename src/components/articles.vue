@@ -9,7 +9,7 @@
               <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
               <ul>
                 <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
-                  <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
+                    <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
                   <div class="sequenceList">
                     <div class="song">
                       <div>{{song.TITLE}}</div>
@@ -54,7 +54,7 @@
   import MHeader from 'components/m-header/m-header'
   import {shuffle} from 'common/js/util'
   import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle} from 'common/js/service'
-  import {getLatestSubscriptionList} from 'api/config'
+  import {getRConfig} from 'api/config'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
 
@@ -72,14 +72,18 @@
           this.pulldownRefreshDataList()
         }, time)
 
-        let rsubscriptionList = await getLatestSubscriptionList()
+        let rConfig = await getRConfig()
         let first = !this.subscriptionList || this.subscriptionList.length === 0
-        for (let subscription of rsubscriptionList) {
-          if (first) {
-            subscription.enable = true
+        if (rConfig.rss && rConfig.rss.items) {
+          for (let subscription of rConfig.rss.items) {
+            console.log(subscription)
+            if (first) {
+              subscription.enable = true
+            }
+            this.saveSubcription(subscription)
           }
-          this.saveSubcription(subscription)
         }
+
         if (!this.subscriptionList || this.subscriptionList.length === 0) {
           this._getLatestArticles()
           this.pulldownRefreshDataList()

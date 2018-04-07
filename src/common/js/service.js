@@ -4,6 +4,7 @@ import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
 import * as ts from 'common/js/translation'
 import {formate2Lyric} from './util'
+import {interceptUrl} from '../../api/config'
 
 const dataManager = require('./data-manager')
 
@@ -28,7 +29,7 @@ export async function downloadArtilePic(article, onProgress) {
 
   }
   let nativeUrl = fs.toURLSync(localFile)
-  await fs.download(envApi.interceptUrl(article.IMG_URL), nativeUrl, {}, onProgress)
+  await fs.download(interceptUrl(article.IMG_URL), nativeUrl, {}, onProgress)
   article.IMG_URL = nativeUrl
   return nativeUrl
 }
@@ -77,9 +78,13 @@ async function downloadAudio(article, onProgress, downLoadQueue) {
   let localFile = `${article.ID}/${article.ID}.mp3`
 
   if (!article.AUDIO_URL) return null
-  if (await fileExist(localFile)) return fs.toURLSync(localFile)
+  if (await fileExist(localFile)) {
+    console.log(localFile);
+    return fs.toURLSync(localFile)
+  }
 
   let nativeUrl = fs.toURLSync(localFile)
+  console.log(nativeUrl)
 
   if (loadingList.indexOf(article.ID) > -1) {
     return await waitFinish(article.ID)
@@ -89,7 +94,7 @@ async function downloadAudio(article, onProgress, downLoadQueue) {
       if (await fileExist(localFile)) return fs.toURLSync(localFile)
 
       loadingList.push(article.ID)
-      return fs.download(envApi.interceptUrl(article.AUDIO_URL), nativeUrl, {}, progressEvt => {
+      return fs.download(interceptUrl(article.AUDIO_URL), nativeUrl, {}, progressEvt => {
         if (progressEvt.lengthComputable) {
           article.percent = Math.round((progressEvt.loaded / progressEvt.total) * 100)
         }
@@ -106,6 +111,7 @@ async function downloadAudio(article, onProgress, downLoadQueue) {
     } else await downloadTask()
 
     let fileEntry = await fs.file(localFile, {create: false})
+
     fileEntry.file(f => {
       article.TOTAL = f.size
       dataManager.update(article)
@@ -125,6 +131,7 @@ let downloadTranslateQ = new Queue(2)
 export async function downloadAllArticles(articles, cancel) {
   for (let article of articles) {
     try {
+      console.log('downlaod ....')
       if (cancel && cancel()) break
       await article.getLyric(true)
       await article.tsTitle()
@@ -287,7 +294,7 @@ export function getDict(text) {
     return ts.translateWithAudio(text).then(dict => {
       return fs.ensure('dict').then(_ => {
         let nativeUrl = fs.toURLSync(`dict/${dict.text}.mp3`)
-        return fs.download(envApi.interceptUrl(dict.audio), nativeUrl, {
+        return fs.download(interceptUrl(dict.audio), nativeUrl, {
           trustAllHosts: true,
           headers: {
             'referer': dict.audio,

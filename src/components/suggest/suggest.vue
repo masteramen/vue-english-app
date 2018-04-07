@@ -36,7 +36,6 @@
   import NoResult from 'base/no-result/no-result'
   import {search} from 'api/search'
   import {ERR_OK} from 'api/config'
-  import {createSong} from 'common/js/song'
   import {mapMutations, mapActions, mapGetters} from 'vuex'
 
   const TYPE_SINGER = 'singer'

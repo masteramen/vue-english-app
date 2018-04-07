@@ -53,7 +53,6 @@
       })
       Bus.$on('play', article => {
         this.curArticle = article
-
       })
     },
     computed: {
@@ -62,20 +61,26 @@
         'fullScreen',
         'playing'
       ]),
-      logo(){
-        return this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png');
+      logo() {
+        return this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
       }
     },
     watch: {
       '$route' (to, from) {
         if (to.path == '/player') {
           window.plugins.insomnia.keepAwake()
-        }else{
+          if (AdMob.admobid.banner) {
+            AdMob.createBanner({
+              adId: AdMob.admobid.banner,
+              position: AdMob.AD_POSITION.BOTTOM_CENTER,
+              autoShow: true })
+          }
+        } else {
           window.plugins.insomnia.allowSleepAgain()
         }
         if (AdMob) {
           if (to.path == '/list') {
-            if(!this.adTime || Date.now() - this.adTime > 60000){
+            if (!this.adTime || Date.now() - this.adTime > 60000) {
               this.adTime = Date.now()
               AdMob.showInterstitial()
             }

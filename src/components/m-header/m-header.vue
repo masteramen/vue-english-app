@@ -66,7 +66,6 @@ import indexMenu from './index-menu'
       display: inline-block
       vertical-align: top
       line-height: 44px
-      font-size: $font-size-large
     .mine
       position: absolute
       top: 0
