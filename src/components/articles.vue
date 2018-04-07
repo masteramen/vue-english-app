@@ -35,9 +35,9 @@
                 </li>
               </ul>
             </div>
-            <div class="loading-container" v-show="!songs.length">
+<!--            <div class="loading-container" v-show="!songs.length">
               <loading></loading>
-            </div>
+            </div>-->
           </scroll>
 
         </div>
@@ -290,10 +290,12 @@
             line-height: 130%
             padding-top:10px
             color:#666
+
           .summary
             margin:10px 0
             line-height :1.5em
             color: #b2b2b2
+
             .summaryWrap
               .icon-success
                 font-size: 100%
@@ -305,10 +307,9 @@
               span
                 font-size: 80%
         &.selected
-          .sequenceList
-            color: green
           .song
-            line-height: 26px
+            color: green
+
       .loading-container
         position: absolute
         width: 100%

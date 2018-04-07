@@ -68,19 +68,15 @@
     },
     watch: {
       '$route' (to, from) {
+        if (to.path == '/player') {
+          window.plugins.insomnia.keepAwake()
+        }else{
+          window.plugins.insomnia.allowSleepAgain()
+        }
         if (AdMob) {
-          if (to.path == '/detail') {
-
-            // AdMob.showRewardVideoAd()
-           /* AdMob.createBanner({
-              adId: 'ca-app-pub-3940256099942544/6300978111',
-              position:AdMob.AD_POSITION.BOTTOM_CENTER,
-              autoShow: true
-            }) */
-          } else {
-            AdMob.removeBanner()
-            if (to.path == '/list') {
-              // AdMob.showRewardVideoAd()
+          if (to.path == '/list') {
+            if(!this.adTime || Date.now() - this.adTime > 60000){
+              this.adTime = Date.now()
               AdMob.showInterstitial()
             }
           }
@@ -91,7 +87,6 @@
 
       open() {
         this.setFullScreen(true)
-        let index = 0
         this.$router.push({
           path: `/player`
         })

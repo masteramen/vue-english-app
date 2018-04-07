@@ -42,6 +42,9 @@ var vm=new Vue({
   router
 }) */
 /* eslint-disable no-new */
+
+navigator.splashscreen.hide()
+
 new Vue({
   el: '#app',
   render: h => h(App),
@@ -54,8 +57,7 @@ var admobid = {}
 // select the right Ad Id according to platform
 if (/(android)/i.test(navigator.userAgent)) {
   admobid = { // for Android
-    banner: 'ca-app-pub-9477174171188196/3994804736',
-    interstitial: 'ca-app-pub-6869992474017983/1657046752'
+
   }
 } else if (/(ipod|iphone|ipad)/i.test(navigator.userAgent)) {
   admobid = { // for iOS
@@ -65,8 +67,7 @@ if (/(android)/i.test(navigator.userAgent)) {
   }
 } else {
   admobid = { // for Windows Phone
-    banner: 'ca-app-pub-9477174171188196/3994804736',
-    interstitial: 'ca-app-pub-6869992474017983/1355127956'
+
   }
 }
 
@@ -76,5 +77,5 @@ if (AdMob) {
 
 // show the interstitial later, e.g. at end of game level
 // setTimeout(_=>{if(AdMob) AdMob.showInterstitial();},5000)
-navigator.splashscreen.hide()
+
 

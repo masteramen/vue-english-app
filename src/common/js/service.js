@@ -2,6 +2,9 @@ import Queue from 'common/js/promise-queue'
 import CordovaPromiseFS from 'common/js/promise-fs'
 import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
+import * as ts from 'common/js/translation'
+import {decrypt2, encrypt2} from './crypto'
+import {fixnum, formate2Lyric} from './util'
 
 const dataManager = require('./data-manager')
 
@@ -152,65 +155,6 @@ export async function fetchLatest() {
 
   await runAll()
 }
-let fixnum = n => {
-  return (Array(2).join('0') + n).slice(-2)
-}
-
-async function formate2Lyric(detailObj) {
-  let duration = detailObj.DURATION || 6 * 60
-  let text = detailObj.CONTENT
-  console.log(text)
-  let timer = 0
-  let str = `[ti:${detailObj.TITLE}]\r\n`
-
-  let lines = text
-    .replace(/(;)/g, '$1\n')
-    .replace(/(")/g, '\n$1\n')
-    .replace(/([^A-Z]+[.?!])[\s\n]+(?=[A-Z])/g, '$1\n')
-    .replace(/([a-z0-9]+\.)(?=[A-Z])/g, '$1\n')
-    .replace(/([".]\s+)(?=[A-Z][a-z]+)/g, '$1\n')
-    .replace(/([?.]\s*")(?=[A-Z][a-z]+)/g, '$1\n')
-    .replace(/\n+/g, '\n')
-    //.replace(/(,)[\n\s]+/g, '$1')
-    // .replace(/"\n([\s\S]*?)\n"/g, '"$1"')
-    // .replace(/\n([a-z]{1,20}\.)\n/gi, '\n$1')
-    // .replace(/(\s[a-z]{1,3}\.)\n(.{0,10}\.)/gi, '$1 $2')
-   // .replace(/\n(.{1,10}\.)\n/gi, '\n$1 ')
-    .replace(/([A-Z]+.\n[A-Z]+\.)\s/gi, function(matchStr) {
-      return matchStr.replace(/\n+/gm, '') + ' '
-    })
-    .replace(/"[^"]+"/g, function(matchStr) {
-      return matchStr.replace(/\n+/gm, ' ').replace(/"\s+/g, '"')
-    })
-    .replace(/("\n+\s*)(?=[a-z0-9]+)/g, '" ')
-    .replace(/([a-z0-9]+)\s*\n+\s*"/g, '$1 "')
-    // .replace(/"\n([^.]*\.)/gi, '" $1\n')
-
-    .split(/\n/)
-
-  return (async () => {
-    let timeLines = lines.filter(x => x.trim().match(/^[[]*\d+:\d+/))
-    if (timeLines.lenght > 3) {
-      str = +text.replace(/(\d+(:\d+)+)/g, '[$1]')
-    } else {
-      var words = text.split(/\s+/).filter(x => x)
-      var wordTime = duration / words.length
-      lines.forEach((line, index) => {
-        let wc = line.split(/\s+/).filter(x => x).length
-        let takeTImes = wc * wordTime
-        let m = fixnum(parseInt(timer / 60))
-        let s = fixnum(parseInt(timer % 60))
-        let ms = fixnum(0)
-        str += `[${m}:${s}.${ms}]${line}\n`
-        timer += takeTImes
-      })
-    }
-      // if (content.length > 1) { str += '\n' + content[1] }
-    str = str.split(/\n/).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n')
-    console.log(lines)
-    return [lines, str]
-  })()
-}
 
 export class Article {
   constructor(data) {
@@ -223,6 +167,7 @@ export class Article {
     return this.AUDIO_URL || this.FEED_TYPE === 'audio'
   }
   async tsTitle() {
+    if (this.TITLE_CN) return
     let dict = await ts.translateWithAudio(this.TITLE)
     this.TITLE_CN = dict.result[0]
     await dataManager.update(this)
@@ -234,13 +179,12 @@ export class Article {
     let jsonExist = await fs.exists(path)
     if (this.LRC_OK != '1') {
       if (!jsonExist || new Date().getTime() - this.LAST_DOWNLOAD_DATE > 3600000) {
-        try{
+        try {
           await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
           this.LAST_DOWNLOAD_DATE = new Date().getTime()
-        }catch (e){
+        } catch (e) {
           console.log(e)
         }
-
       }
       console.log(this.CONTENT)
       let lyric = ''
@@ -274,7 +218,7 @@ export class Article {
         }
        // if (this.DURATION) this.LRC_OK = '2'
        // else
-          this.LRC_OK = '3'
+        this.LRC_OK = '3'
         needSave = true
       }
       if (needSave) {
@@ -333,8 +277,6 @@ export function createArticle(row) {
 
 export const configProvider = dataManager.getConfigProvider()
 
-import * as ts from 'common/js/translation'
-import {decrypt2, encrypt2} from './crypto'
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {
     if (dicts && dicts.length > 0) {

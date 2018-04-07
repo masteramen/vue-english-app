@@ -33,6 +33,7 @@ class Player {
   loopplay(url) {
     if (this.timer) clearInterval(this.timer)
     if (this.my_media) {
+      this.my_media.pause()
       this.my_media.release()
       delete this.my_media
     }

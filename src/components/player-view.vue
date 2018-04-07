@@ -109,7 +109,6 @@
         playingLyric: '',
         audioUrl: '',
         lyricFollow: false,
-        needUpdateRemoteControl: true,
         lastSwipeTime: '',
         showLoading: true,
         loadingTitle: '',
@@ -128,8 +127,8 @@
         })()
       })
 
-      document.addEventListener('resume', this.onFront, false)
-      document.addEventListener('pause', this.onBackGround, false)
+/*      document.addEventListener('resume', this.onFront, false)
+      document.addEventListener('pause', this.onBackGround, false)*/
     },
     mounted() {
       this.$nextTick(() => {
@@ -166,16 +165,17 @@
         player.setAudio(this.$refs.audio)
         let _this = this
         console.log('bind RemoteCommand position')
+
         RemoteCommand.on('position', function(position) {
           console.log('seek to position:' + position)
           player.seekTo(position)
         })
-        document.addEventListener('pause', function(event) {
+/*        document.addEventListener('pause', function(event) {
           _this.enableOrDisableScreenLock(_this.fullScreen)
         })
         document.addEventListener('resume', function(event) {
           _this.enableOrDisableScreenLock(_this.fullScreen)
-        })
+        })*/
 
         document.addEventListener('remote-event', function(event) {
           console.log(event)
@@ -299,15 +299,6 @@
       open() {
         this.setFullScreen(true)
       },
-      enableOrDisableScreenLock(value) {
-        if (value) {
-          console.log('keep awake')
-          window.plugins.insomnia.keepAwake()
-        } else {
-          console.log('keep allowSleepAgain')
-          window.plugins.insomnia.allowSleepAgain()
-        }
-      },
       togglePlaying() {
         if (this.disableCls) return
         this.setPlayingState(!this.playing)
@@ -369,14 +360,13 @@
       },
       updateTime(e) {
         this.currentTime = e.target.currentTime
-        if (device.platform === 'iOS' && window.remoteControls && this.needUpdateRemoteControl) {
+        if (device.platform === 'iOS' && window.remoteControls && !this.updatedRomte) {
           setTimeout(() => {
             let params = ['学英语听新闻', this.curArticle.TITLE, '', this.icon, this.curArticle.DURATION, this.currentTime]
-
+            this.updatedRomte = true
             window.remoteControls.updateMetas(success => {
-              this.needUpdateRemoteControl = false
+              this.updatedRomte = true
             }, fail => {
-              console.log(fail)
             }, params)
           }, 10)
         }
@@ -512,7 +502,7 @@
         this.AUDIO_URL = false
         this.currentTime = 0
         player.pause()
-        if (this.currentLyric) this.currentLyric.togglePlay()
+        if (this.currentLyric) this.currentLyric.stop()
         this.currentLyric = null
         this.curArticle = currentArticle
         Bus.$emit('play', currentArticle)
@@ -526,7 +516,10 @@
             if (this.playing) {
               this.loadingTitle = '正在加载音频'
               let audioUrl = await this.getAudio()
-              if (this.playing)player.play(audioUrl)
+              if (this.playing){
+                player.play(audioUrl)
+                if (this.currentLyric) this.currentLyric.togglePlay()
+              }
             } else player.pause()
           } catch (e) {
             console.log(e)
@@ -535,18 +528,23 @@
         })()
       },
       playing(newPlaying) {
+
         if (newPlaying) {
           player.loopplay('silent.mp3');
           (async () => {
             await this.getLyric()
             let audioUrl = await this.getAudio()
             console.log(`play audio:${audioUrl}`)
-            if (this.playing)player.play(audioUrl, this.currentTime)
-            this.currentLyric.togglePlay()
+            if (this.playing){
+              player.play(audioUrl, this.currentTime)
+              this.currentLyric.togglePlay()
+              this.updatedRomte = false
+            }
           })()
         } else {
           player.pause()
           if (this.currentLyric) this.currentLyric.togglePlay()
+
         }
       },
       fullScreen(value) {
@@ -557,7 +555,6 @@
           this.setCurrentIndex(index)
         }
         console.log(`this.currentIndex:${this.currentIndex}`)
-        this.enableOrDisableScreenLock(value)
       }
 
     },
