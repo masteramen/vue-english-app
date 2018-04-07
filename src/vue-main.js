@@ -43,7 +43,7 @@ var vm=new Vue({
 }) */
 /* eslint-disable no-new */
 
-//navigator.splashscreen.hide()
+navigator.splashscreen.hide()
 
 new Vue({
   el: '#app',

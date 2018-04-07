@@ -79,7 +79,7 @@ async function downloadAudio(article, onProgress, downLoadQueue) {
 
   if (!article.AUDIO_URL) return null
   if (await fileExist(localFile)) {
-    console.log(localFile);
+    console.log(localFile)
     return fs.toURLSync(localFile)
   }
 
@@ -183,7 +183,7 @@ export class Article {
 
     let path = `${this.ID}/${this.ID}.json`
     let jsonExist = await fs.exists(path)
-    if (this.LRC_OK != '1') {
+    if (this.LRC_OK !== '1') {
       if (!jsonExist || new Date().getTime() - this.LAST_DOWNLOAD_DATE > 3600000) {
         try {
           await downLoadLyricQueue.add(_ => { return downloadLyric(this) })
@@ -222,9 +222,8 @@ export class Article {
             await this.translate(lines, index)
           }
         }
-       // if (this.DURATION) this.LRC_OK = '2'
-       // else
-        this.LRC_OK = '3'
+        if (this.DURATION) this.LRC_OK = '2'
+        else { this.LRC_OK = '3' }
         needSave = true
       }
       if (needSave) {
@@ -333,6 +332,4 @@ export function getDictListBy(list) {
 export function getRecentDictList(list) {
   return dataManager.getRecentDictList()
 }
-
-
 

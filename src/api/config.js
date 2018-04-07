@@ -84,7 +84,7 @@ export function isNetWorkOK() {
 };
 (async () => {
   let rConfig = await getRConfig()
-  var admobid = {}
+  var admobid = {admobid:{}};
   for (let admob in rConfig.admob) {
     if (new RegExp(admob, 'i').test(navigator.userAgent)) {
       admobid = admob

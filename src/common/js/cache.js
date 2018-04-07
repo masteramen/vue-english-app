@@ -10,6 +10,7 @@ const FAVORITE_KEY = '__favorite__'
 const FAVORITE_MAX_LEN = 200
 
 const SUBSCRIPTION_KEY = '__subscription__'
+const LAST_FRESH_KEY = 'LAST_FRESH_KEY'
 
 function insertArray(arr, val, compare, maxLen) {
   const index = arr.findIndex(compare)
@@ -129,4 +130,11 @@ export function addSubcription(song) {
   storage.set(SUBSCRIPTION_KEY, songs)
   console.log(song)
   return songs
+}
+export function getOrSetRefreshTime(updateTime) {
+  if (updateTime) {
+    storage.set(LAST_FRESH_KEY, updateTime)
+  }
+
+  return storage.get(LAST_FRESH_KEY, '')
 }

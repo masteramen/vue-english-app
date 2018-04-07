@@ -6,10 +6,10 @@
 
           <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
             <div>
-              <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div>上次刷新：{{lastFetchTime|formatDate2}} </div></div>
+              <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div v-if="lastFetchTime">上次刷新：{{lastFetchTime|formatDate2}} </div></div>
               <ul>
                 <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
-                    <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="song.percent!=100"></div>
+                    <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="downloadAll && song.percent!=100"></div>
                   <div class="sequenceList">
                     <div class="song">
                       <div>{{song.TITLE}}</div>
@@ -50,6 +50,7 @@
   import Scroll from 'base/scroll2/scroll'
   import Loading from 'base/loading/loading'
   import {playlistMixin} from 'common/js/mixin'
+  import {getOrSetRefreshTime} from '../common/js/cache'
   import {formatDate} from 'common/js/formatDate'
   import MHeader from 'components/m-header/m-header'
   import {shuffle} from 'common/js/util'
@@ -96,7 +97,7 @@
         songs: [],
         reload: true,
         selected: -1,
-        lastFetchTime: 0,
+        lastFetchTime: getOrSetRefreshTime(),
         pullDownTip: '',
         isPullingDown: false,
         pullDownConfig: {
@@ -155,6 +156,7 @@
         fetchLatest()
           .then(contents => {
             this.lastFetchTime = new Date().getTime()
+            getOrSetRefreshTime(this.lastFetchTime )
             return this._getLatestArticles()
           }).then(() => {
             this.$refs.topli//  lllkkst./////(true)
@@ -185,7 +187,8 @@
         // this.$refs.toplist.refresh()
       },
       ...mapGetters([
-        'currentSong'
+        'currentSong',
+        'downloadAll'
       ]),
       selectItem(item, index) {
         this.selectCurIndex({index})

@@ -128,7 +128,7 @@
       })
 
 /*      document.addEventListener('resume', this.onFront, false)
-      document.addEventListener('pause', this.onBackGround, false)*/
+      document.addEventListener('pause', this.onBackGround, false) */
     },
     mounted() {
       this.$nextTick(() => {
@@ -175,7 +175,7 @@
         })
         document.addEventListener('resume', function(event) {
           _this.enableOrDisableScreenLock(_this.fullScreen)
-        })*/
+        }) */
 
         document.addEventListener('remote-event', function(event) {
           console.log(event)
@@ -246,7 +246,7 @@
       },
       percent() {
         let percent = this.currentTime / this.curArticle.DURATION
-        if (percent === +percent){
+        if (percent === +percent) {
           Bus.$emit('percent', percent)
           return percent
         }
@@ -323,6 +323,9 @@
       onDuration(e) {
         if (!this.curArticle.DURATION) {
           this.curArticle.DURATION = e.detail
+          if (this.curArticle.LRC_OK === '3') {
+            this.getLyric()
+          }
           this.curArticle.save()
         }
       },
@@ -442,8 +445,10 @@
         })()
       },
       getLyric: function () {
-        if (this.LRC) return
+        if (this.LRC && this.curArticle.LRC_OK === '2') return
         return (async () => {
+          alert(this.LRC)
+          alert(this.curArticle.LRC_OK)
           this.loadingTitle = '正在加载内容'
           let id = this.curArticle.ID
           let {lines, lyric} = await this.curArticle.getLyric()
@@ -457,9 +462,15 @@
             delete this.currentLyric
           }
           this.loadingTitle = ''
-          if (lyric) this.currentLyric = new Lyric(lyric, this.handleLyric)
+          if (lyric) {
+            this.currentLyric = new Lyric(lyric, this.handleLyric)
+            if(this.playing){
+              this.currentLyric.togglePlay()
+            }
+          }
           console.log(lyric)
           console.log(this.currentLyric)
+
         })()
       },
       handleLyric({ lineNum, txt }) {
@@ -519,7 +530,7 @@
             if (this.playing) {
               this.loadingTitle = '正在加载音频'
               let audioUrl = await this.getAudio()
-              if (this.playing){
+              if (this.playing) {
                 player.play(audioUrl)
                 if (this.currentLyric) this.currentLyric.togglePlay()
               }
@@ -531,14 +542,13 @@
         })()
       },
       playing(newPlaying) {
-
         if (newPlaying) {
           player.loopplay('silent.mp3');
           (async () => {
             await this.getLyric()
             let audioUrl = await this.getAudio()
             console.log(`play audio:${audioUrl}`)
-            if (this.playing){
+            if (this.playing) {
               player.play(audioUrl, this.currentTime)
               this.currentLyric.togglePlay()
               this.updatedRomte = false
@@ -547,7 +557,6 @@
         } else {
           player.pause()
           if (this.currentLyric) this.currentLyric.togglePlay()
-
         }
       },
       fullScreen(value) {
