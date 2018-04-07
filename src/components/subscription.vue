@@ -18,21 +18,10 @@
   import {mapGetters, mapActions} from 'vuex'
   import SubscriptionList from './suggest/subscription-list'
   import SubscriptionSearchBox from '../base/search-box/subscription-search-box'
-import {getLatestSubscriptionList} from 'common/js/service'
 
 export default {
     created() {
-      (async () => {
-        let rsubscriptionList = await getLatestSubscriptionList()
-        let first = !this.subscriptionList || this.subscriptionList.length === 0
-        for (let subscription of rsubscriptionList) {
-          if (first) {
-            subscription.enable = true
-          }
-          this.saveSubcription(subscription)
-        }
 
-      })()
     },
     mounted() {
     },

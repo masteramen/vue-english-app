@@ -35,9 +35,9 @@
                 </li>
               </ul>
             </div>
-<!--            <div class="loading-container" v-show="!songs.length">
+            <div class="loading-container" v-show="!songs.length">
               <loading></loading>
-            </div>-->
+            </div>
           </scroll>
 
         </div>
@@ -53,20 +53,37 @@
   import {formatDate} from 'common/js/formatDate'
   import MHeader from 'components/m-header/m-header'
   import {shuffle} from 'common/js/util'
-  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle} from 'common/js/service'
+  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle, getLatestSubscriptionList} from 'common/js/service'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
 
   export default {
     mixins: [playlistMixin],
     created() {
+
     },
     mounted() {
-      let time = this.subscriptionList&&this.subscriptionList.length?0:6*1000
-      setTimeout(()=>{
-        this._getLatestArticles()
-        this.pulldownRefreshDataList()
-      },time)
+      (async () => {
+        let time = this.subscriptionList && this.subscriptionList.length ? 0 : 6 * 1000
+
+        setTimeout(() => {
+          this._getLatestArticles()
+          this.pulldownRefreshDataList()
+        }, time)
+
+        let rsubscriptionList = await getLatestSubscriptionList()
+        let first = !this.subscriptionList || this.subscriptionList.length === 0
+        for (let subscription of rsubscriptionList) {
+          if (first) {
+            subscription.enable = true
+          }
+          this.saveSubcription(subscription)
+        }
+        if (!this.subscriptionList || this.subscriptionList.length === 0) {
+          this._getLatestArticles()
+          this.pulldownRefreshDataList()
+        }
+      })()
     },
     data() {
       return {
@@ -103,9 +120,9 @@
       },
       handlerTSCNTITLE(item) {
         if (!item.TITLE_CN) {
-          (async ()=>{
+          (async () => {
             await item.tsTitle()
-            this.$refs.toplist.refresh();
+            this.$refs.toplist.refresh()
           })()
         }
       },
@@ -182,7 +199,8 @@
       }),
       ...mapActions([
         'selectCurIndex',
-        'toggleDownloadAll'
+        'toggleDownloadAll',
+        'saveSubcription'
       ])
     },
     computed: {
