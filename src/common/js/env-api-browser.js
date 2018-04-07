@@ -1,24 +1,8 @@
 // const url = require('url')
 // const Queue =require('promise-queue')
-const axios = require('axios')
+import {interceptUrl} from "../../api/config";
 // var queue = new Queue(1, Infinity)
 import dbDdl from 'common/js/db-ddl'
-
-export function interceptUrl(url) {
-
-  if (window.device.platform === 'browser' && url.indexOf('http') === 0) {
-    return location.protocol + '//' + location.host + `/api/url?url=${encodeURIComponent(url)}`
-  }
-  return url
-}
-axios.interceptors.request.use(
-  config => {
-    config.url = interceptUrl(config.url)
-    return config
-  },
-  err => {
-    return Promise.reject(err)
-  })
 
 let db = {}
 

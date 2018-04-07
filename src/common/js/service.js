@@ -3,8 +3,7 @@ import CordovaPromiseFS from 'common/js/promise-fs'
 import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
 import * as ts from 'common/js/translation'
-import {decrypt2, encrypt2} from './crypto'
-import {fixnum, formate2Lyric} from './util'
+import {formate2Lyric} from './util'
 
 const dataManager = require('./data-manager')
 
@@ -328,55 +327,5 @@ export function getRecentDictList(list) {
   return dataManager.getRecentDictList()
 }
 
-const axios = require('axios')
-const $ = require('jquery')
-export async function getLatestSubscriptionList() {
-  var feed = 'http://www.jfox.info/rss/rsslist.php'
 
-  return axios.get(feed, {}).then((res) => {
-    let ret = []
-    $($.parseXML(decrypt2(res.data.trim()))).find('item').each(function () {
-      var el = $(this)
-      ret.push({
-        feedId: el.find('link').text(),
-        iconUrl: '',
-        type: el.find('type').text(),
-        title: el.find('title').text(),
-        alias: el.find('alias').text(),
-        description: el.find('description').text()
-      })
-    })
-    return ret
-  })
-}
-export async function saveArticleToRemote(article, lyric, lines) {
-  await dataManager.update(article)
-  console.log(lyric)
-  window.lyric = lyric
-  let str = `[ti:${article.TITLE}]\n`
-  str += `${article.TITLE_CN}\n`
-  for (let i = 0; i < lyric.lines.length; i++) {
-    let line = lyric.lines[i]
-    let m = fixnum(parseInt(line.time / 60000))
-    let s = fixnum(parseInt(line.time / 1000) % 60)
-    let ms = fixnum(0)
-    str += `[${m}:${s}.${ms}]${$('<div/>').append(line.txt).text().trim()}\n`
-    let lineTs = await article.translate(lines, i)
-    str += `${lineTs}\n`
-  }
-
-  const data = Object.assign({}, {
-    link: article.REFERER,
-    content: str,
-    audio: article.AUDIO_URL,
-    title: article.TITLE,
-    pubDate: parseInt(article.POST_DATE)
-  }, {})
-  let encryptStr = encrypt2(JSON.stringify(data))
-  console.log(article)
-  console.log(data)
-  axios.post('http://www.jfox.info/rss/post.php', {'_e': encryptStr})
-
-  console.log(str)
-}
 

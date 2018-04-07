@@ -53,7 +53,8 @@
   import {formatDate} from 'common/js/formatDate'
   import MHeader from 'components/m-header/m-header'
   import {shuffle} from 'common/js/util'
-  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle, getLatestSubscriptionList} from 'common/js/service'
+  import {getLatestArticles, fetchLatest, downloadAllArticles, downloadArtilePic, createArticle} from 'common/js/service'
+  import {getLatestSubscriptionList} from 'api/config'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
 

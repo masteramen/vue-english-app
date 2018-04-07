@@ -246,8 +246,11 @@
       },
       percent() {
         let percent = this.currentTime / this.curArticle.DURATION
-        if (percent === +percent)Bus.$emit('percent', percent)
-        return percent
+        if (percent === +percent){
+          Bus.$emit('percent', percent)
+          return percent
+        }
+        return 0
       },
       iconMode() {
         return this.mode === playMode.sequence ? 'icon-sequence' : this.mode === playMode.loop ? 'icon-loop' : 'icon-random'
