@@ -364,11 +364,12 @@
         console.log('error')
         this.next()
       },
-      updateTime(e) {
+      updateTime(e,pause) {
         this.currentTime = e.target.currentTime
-        if (device.platform === 'iOS' && window.remoteControls && !this.updatedRomte) {
+        if (device.platform === 'iOS' && window.remoteControls && (!this.updatedRomte||pause)) {
+          if(pause)this.updatedRomte = false;
           setTimeout(() => {
-            let params = ['学英语听新闻', this.curArticle.TITLE, '', this.icon, this.curArticle.DURATION, this.currentTime]
+            let params = ['学英语听新闻', this.curArticle.TITLE, '', this.icon, this.curArticle.DURATION, this.currentTime,pause?0:1]
             this.updatedRomte = true
             window.remoteControls.updateMetas(success => {
               this.updatedRomte = true
@@ -447,8 +448,6 @@
       getLyric: function () {
         if (this.LRC && this.curArticle.LRC_OK === '2') return
         return (async () => {
-          alert(this.LRC)
-          alert(this.curArticle.LRC_OK)
           this.loadingTitle = '正在加载内容'
           let id = this.curArticle.ID
           let {lines, lyric} = await this.curArticle.getLyric()
@@ -464,7 +463,7 @@
           this.loadingTitle = ''
           if (lyric) {
             this.currentLyric = new Lyric(lyric, this.handleLyric)
-            if(this.playing){
+            if(this.playing && this.AUDIO_URL){
               this.currentLyric.togglePlay()
             }
           }
@@ -556,6 +555,7 @@
           })()
         } else {
           player.pause()
+          this.updateTime({target:{currentTime:this.currentTime}},true);
           if (this.currentLyric) this.currentLyric.togglePlay()
         }
       },

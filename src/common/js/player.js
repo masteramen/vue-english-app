@@ -76,7 +76,6 @@ class Player {
           if (this.timer) clearInterval(this.timer)
           this.audio.dispatchEvent(new Event('ended'))
 
-
           // this.my_media.getCurrentPosition(
           //   position => {
           //    console.log(`position:${position} && this.my_media.getDuration():${this.my_media.getDuration()}`)
@@ -85,7 +84,6 @@ class Player {
           //     console.log('Error getting pos=' + e)
           //   }
           // )
-
         },
         err => {
           this.audio.dispatchEvent(new Event('error'))
@@ -115,11 +113,11 @@ class Player {
       }, 100)
 
       // this.my_media.play({ playAudioWhenScreenIsLocked : true })
-      if (typeof position === 'number') {
-        this.seekTo(position)
-      }
       this.my_media.play()
 
+      if (typeof position === 'number' && position>0) {
+        setTimeout(() => this.seekTo(position, 0))
+      }
       if (this.timer) clearInterval(this.timer)
 
       this.timer = setInterval(() => {

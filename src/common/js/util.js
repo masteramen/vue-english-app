@@ -36,7 +36,7 @@ export async function formate2Lyric(detailObj) {
   let text = detailObj.CONTENT
 
   try {
-    lines = JSON.parse(detailObj.CONTENT)
+    lines = JSON.parse(detailObj.CONTENT).lines
     text = lines.join('\n')
   } catch (e) {}
   let timer = 0
