@@ -36,7 +36,7 @@
 <script type="text/ecmascript-6">
   import Scroll from 'base/scroll2/scroll'
   import {getData} from 'common/js/dom'
-  import {configProvider, getDictList,getRecentDictList,removeDict} from 'common/js/service'
+  import {getDictList,getRecentDictList,removeDict} from 'common/js/service'
   const ANCHOR_HEIGHT = 18
   const TITLE_HEIGHT = 30
 

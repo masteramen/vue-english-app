@@ -146,9 +146,9 @@ export function getLatestArticles() {
   return envApi.getLatestArticles()
   // return Promise.reject()
 }
-
+import {getOrSetSetting} from './cache'
 export async function fetchLatest() {
-  let time = new Date().getTime() - 86400000 * configProvider.getConfig().nDay
+  let time = new Date().getTime() - 86400000 * getOrSetSetting().nDay
   let oldArticles = await envApi.getOldArticlesAndMarkDelete(time)
   for (let o of oldArticles.contents) {
     try {
@@ -264,7 +264,7 @@ export class Article {
     if (!this.AUDIO_URL) {
       return Promise.reject({code: 1, desc: '找不到音频文件！'})
     }
-    if (navigator.connection.type === Connection.CELL && configProvider.getConfig().checklistValues.indexOf('download-cell-net-work') === -1) {
+    if (navigator.connection.type === Connection.CELL && getOrSetSetting().checklistValues.indexOf('download-cell-net-work') === -1) {
       return Promise.reject({code: 0, desc: '请先设置开启手机网络下载音频选项！'})
     }
     return downloadAudio(this, onProgress, downLoadQueue)
@@ -280,7 +280,6 @@ export function createArticle(row) {
   return new Article(row)
 }
 
-export const configProvider = dataManager.getConfigProvider()
 
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {

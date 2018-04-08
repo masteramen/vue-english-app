@@ -88,16 +88,17 @@
   import Scroll from 'base/scroll2/scroll'
   import player from 'common/js/player'
   import touchDir from 'common/js/touch-dir'
-  import {createArticle, getDict, configProvider, saveArticleToRemote, getDictListBy} from 'common/js/service'
+  import {createArticle, getDict, saveArticleToRemote, getDictListBy} from 'common/js/service'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
 
   import Bus from 'common/js/bus'
+  import {getOrSetSetting} from 'common/js/cache'
 
   export default {
     data() {
       return {
-        config: configProvider.getConfig(),
+        config: getOrSetSetting(),
         curArticle: createArticle({}),
         status: 0,
         currentTime: 0,

@@ -41,8 +41,7 @@
 
 <script type="text/ecmascript-6">
   import Scroll from 'base/scroll2/scroll'
-  import {configProvider} from 'common/js/service'
-
+  import {getOrSetSetting} from 'common/js/cache'
   export default {
     created() {
 
@@ -51,77 +50,74 @@
     },
     data() {
       return {
-        config:configProvider.getConfig(),
-        checklistOptions:[
+        config: getOrSetSetting(),
+        checklistOptions: [
           {
-            label:'手机网络下载音频',
-            value:'download-cell-net-work'
+            label: '手机网络下载音频',
+            value: 'download-cell-net-work'
           },
           {
-            label:'显示生词翻译',
-            value:'disp-new-word-ts'
+            label: '显示生词翻译',
+            value: 'disp-new-word-ts'
           },
           {
-            label:'显示段落译文',
-            value:'disp-p-ts'
+            label: '显示段落译文',
+            value: 'disp-p-ts'
           }],
-        nDayOptions:[
+        nDayOptions: [
           {
-            label:'2天',
-            value:'2'
+            label: '2天',
+            value: '2'
           },
           {
-            label:'3天',
-            value:'3'
+            label: '3天',
+            value: '3'
           },
           {
-            label:'4天',
-            value:'4'
+            label: '4天',
+            value: '4'
           },
           {
-            label:'5天',
-            value:'5'
+            label: '5天',
+            value: '5'
           }],
 
-        settingList:['voa','bbc'],
-        nDaySheetVisible:false,
-        dayActions:[{name:"2"},{name:"3"},{name:"4"},{name:"5"}],
-        popupVisible:false
+        settingList: ['voa', 'bbc'],
+        nDaySheetVisible: false,
+        dayActions: [{name: '2'}, {name: '3'}, {name: '4'}, {name: '5'}],
+        popupVisible: false
       }
-
     },
-    filters:{
-
+    filters: {
 
     },
     methods: {
-      clickNDays(){
-        this.popupVisible=!this.popupVisible
-
+      clickNDays() {
+        this.popupVisible = !this.popupVisible
       },
-      clickVersion(){
-        this.config.isDebug+=1
+      clickVersion() {
+        this.config.isDebug += 1
         console.log(this.config.isDebug)
       },
       back() {
-        this.show=false
+        this.show = false
       }
     },
-    computed:{
+    computed: {
 
     },
     watch: {
-      config:{
-        handler(val, oldVal){
+      config: {
+        handler(val, oldVal) {
           console.log(val)
-          configProvider.save(this.config)
+          getOrSetSetting(this.config)
         },
-        deep:true
+        deep: true
       }
 
     },
     components: {
-      Scroll,
+      Scroll
     }
   }
 </script>

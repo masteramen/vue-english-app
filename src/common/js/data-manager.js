@@ -38,8 +38,9 @@ function insert(DETAIL) {
   })
 }
 
+import {getOrSetSetting} from './cache'
 async function getList(theurl, results) {
-  let time = new Date().getTime() - 86400000 * getConfigProvider().getConfig().nDay
+  let time = new Date().getTime() - 86400000 * getOrSetSetting().nDay
   for (let detailObj of results) {
     try {
       let row = await isExist(detailObj)
@@ -234,24 +235,6 @@ function saveDict({qtext, result, detail, audio,ADD_DATE}) {
       }
     })
 }
-function getConfigProvider() {
-  let STORAGE_KEY = 'settings.config'
-  let storage = {
-
-    getConfig: function () {
-      let config = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-      return Object.assign({
-        checklistValues: ['disp-new-word-ts', 'disp-p-ts'],
-        isDebug: 0,
-        nDay: '3'
-      }, config)
-    },
-    save: function (config) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config))
-    }
-  }
-  return storage
-}
 module.exports = {
   getArticlesBasicInfo,
   findById,
@@ -264,7 +247,6 @@ module.exports = {
   getDict,
   saveDict,
   getDictList,
-  getConfigProvider,
   getDictListBy,
   getRecentDictList,
   removeDict

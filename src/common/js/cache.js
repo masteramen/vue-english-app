@@ -138,3 +138,15 @@ export function getOrSetRefreshTime(updateTime) {
 
   return storage.get(LAST_FRESH_KEY, '')
 }
+const KEY_SETTING_CONFIG = 'setting_config'
+export function getOrSetSetting(config) {
+  if (config) {
+    storage.set(KEY_SETTING_CONFIG, config)
+  }
+
+  return storage.get(KEY_SETTING_CONFIG, {
+    checklistValues: ['disp-new-word-ts', 'disp-p-ts'],
+    isDebug: 0,
+    nDay: '3'
+  })
+}
