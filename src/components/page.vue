@@ -18,7 +18,7 @@
 				<slot name="menu">
 					<div class="item menu" v-if="menuIcon||menuTxt">
 						<span class="txt pos_center" @click="onCickMenu" style="padding-right:10px;">
-							<i :class="`icon-${menuIcon}`" v-if="menuIcon"></i>
+							<i :class="`${menuIcon}`" v-if="menuIcon"></i>
 							{{menuTxt}}
 						</span>
 					</div>

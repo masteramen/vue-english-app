@@ -367,8 +367,7 @@
       },
       updateTime(e,pause) {
         this.currentTime = e.target.currentTime
-        if (device.platform === 'iOS' && window.remoteControls && (!this.updatedRomte||pause)) {
-          if(pause)this.updatedRomte = false;
+        if (device.platform === 'iOS' && window.remoteControls) {
           setTimeout(() => {
             let params = ['学英语听新闻', this.curArticle.TITLE, '', this.icon, this.curArticle.DURATION, this.currentTime,pause?0:1]
             this.updatedRomte = true
@@ -523,14 +522,15 @@
         this.lyricFollow = this.curArticle.LRC_OK == '1'
         this.$refs.lyricList.scrollTo(0, 0)
         this.icon = this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
-        player.loopplay('silent.mp3');
+        player.loopplay();
         (async () => {
           try {
+            let cid = this.curArticle.ID
             await this.getLyric()
             if (this.playing) {
               this.loadingTitle = '正在加载音频'
               let audioUrl = await this.getAudio()
-              if (this.playing) {
+              if (this.playing && cid === this.curArticle.ID) {
                 player.play(audioUrl)
                 if (this.currentLyric) this.currentLyric.togglePlay()
               }
@@ -543,12 +543,14 @@
       },
       playing(newPlaying) {
         if (newPlaying) {
-          player.loopplay('silent.mp3');
+          player.loopplay();
           (async () => {
+            let cid = this.curArticle.ID
             await this.getLyric()
             let audioUrl = await this.getAudio()
             console.log(`play audio:${audioUrl}`)
-            if (this.playing) {
+
+            if (this.playing && cid === this.curArticle.ID) {
               player.play(audioUrl, this.currentTime)
               this.currentLyric.togglePlay()
               this.updatedRomte = false

@@ -112,7 +112,7 @@ html,body,.wh100{height: 100%;width: 100%;}
 .navbar .item {
 	position: absolute;
     height: 100%;
-    width: 44px;
+    width: 150px;
     top: 0;
     z-index: 100;
     cursor: pointer;
@@ -148,7 +148,7 @@ html,body,.wh100{height: 100%;width: 100%;}
 }
 .navbar .item.menu{
 	right: 0;
-    text-align: center;
+  text-align: right;
 }
 .navbar .menu [class^="icon-"]{
     font-size: 22px;

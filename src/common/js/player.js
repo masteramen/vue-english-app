@@ -1,4 +1,3 @@
-import {downloadFile} from './service'
 class Player {
 
   setAudio(audio) {
@@ -32,12 +31,13 @@ class Player {
   }
   loopplay(url) {
     if (this.timer) clearInterval(this.timer)
+    if (this.timerDur)clearInterval(this.timerDur)
     if (this.my_media) {
       this.my_media.pause()
       this.my_media.release()
       delete this.my_media
     }
-    this.my_media = new Media(url,
+    this.my_media = new Media('silent.mp3',
       () => {
         console.log('play :' + url)
       },
@@ -64,9 +64,9 @@ class Player {
       let url = this.audioUrl
 
       if (this.my_media) {
-        if (this.status != Media.MEDIA_STOPPED) {
-          this.my_media.pause()
-        }
+       // if (this.status != Media.MEDIA_STOPPED) {
+        this.my_media.pause()
+        // }
         this.my_media.release()
         delete this.my_media
       }
@@ -103,9 +103,10 @@ class Player {
       )
     }
     if (this.my_media) {
-      var timerDur = setInterval(() => {
+      if (this.timerDur)clearInterval(this.timerDur)
+      this.timerDur = setInterval(() => {
         if (this.my_media.getDuration() > 0) {
-          clearInterval(timerDur)
+          clearInterval(this.timerDur)
           console.log(this.my_media.getDuration())
           console.log('trigger duration event')
           this.audio.dispatchEvent(new CustomEvent('duration', {'detail': this.my_media.getDuration()}))
@@ -115,7 +116,7 @@ class Player {
       // this.my_media.play({ playAudioWhenScreenIsLocked : true })
       this.my_media.play()
 
-      if (typeof position === 'number' && position>0) {
+      if (typeof position === 'number' && position > 0) {
         setTimeout(() => this.seekTo(position, 0))
       }
       if (this.timer) clearInterval(this.timer)

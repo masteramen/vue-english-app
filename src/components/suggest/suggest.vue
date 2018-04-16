@@ -19,7 +19,9 @@
           <p class="text">{{item.description}}</p>
         </div>
         <div class="op">
-          <i :class="statusIcon(item)" @click="toggleItem(item)"></i>
+          <i :class="statusIcon(item)" @click="toggleItem(item)">
+            <loading v-if="statusIcon(item)===''" title="Checking"></loading>
+          </i>
         </div>
       </li>
       <loading v-show="hasMore" title=""></loading>
@@ -35,7 +37,7 @@
   import Loading from 'base/loading/loading'
   import NoResult from 'base/no-result/no-result'
   import {search} from 'api/search'
-  import {ERR_OK} from 'api/config'
+  import {ERR_OK, checkFeed, FEED_STATUS} from 'api/config'
   import {mapMutations, mapActions, mapGetters} from 'vuex'
 
   const TYPE_SINGER = 'singer'
@@ -70,12 +72,11 @@
         this.hasMore = false
         this.$refs.suggest.scrollTo(0, 0)
         search(this.query, this.page, this.showSinger, perpage).then((res) => {
-          for(let item of res){
-            console.log('search...')
+          for (let item of res) {
             item.feedId = item.feedId.substring(5)
-            if(this.subscriptionList.filter(e=>e.feedId===item.feedId).length>0){
-              item.remove=true
-            }else item.remove=false
+            if (this.subscriptionList.filter(e => e.feedId === item.feedId).length > 0) {
+              item.status = FEED_STATUS.ok
+            } else item.status = FEED_STATUS.unknow
           }
           this.result = res
           console.log(this.result)
@@ -97,24 +98,22 @@
         this.$emit('listScroll')
       },
       selectItem(item) {
-/*        if (item.type === TYPE_SINGER) {
-          const singer = new Singer({
-            id: item.singermid,
-            name: item.singername
-          })
-          this.$router.push({
-            path: `/search/${singer.id}`
-          })
-          this.setSinger(singer)
-        } else {
-          this.insertSong(item)
-        }
-        this.$emit('select', item)*/
+
       },
       toggleItem(item) {
-        this.toggleSubcription(item)
-        item.remove = !item.remove
-        this.$emit('select', item)
+        (async () => {
+          if (item.status !== FEED_STATUS.ok) {
+            item.status = FEED_STATUS.checking
+            let result = await checkFeed(item.feedId)
+            item.enable = true
+            Object.assign(item, result)
+          } else if (item.status === FEED_STATUS.ok) {
+            item.status = FEED_STATUS.unknow
+          }
+
+          this.toggleSubcription(item)
+          this.$emit('select', item)
+        })()
       },
 /*      getDisplayName(item) {
         if (item.type === TYPE_SINGER) {
@@ -130,22 +129,14 @@
           return 'icon-music'
         }
       },
-    statusIcon(item) {
-      console.log('icon status....')
-      if (item.remove) return 'icon-circle-remove'
-      else return 'icon-add'
-    },
+      statusIcon(item) {
+        if (item.status === FEED_STATUS.ok) return 'icon-circle-remove'
+        else if (item.status === FEED_STATUS.unknow) return 'icon-add'
+        else if (item.status === FEED_STATUS.fail) return 'icon-error'
+        else return ''
+      },
       _genResult(data) {
         return data
-      },
-      _normalizeSongs(list) {
-        let ret = []
-        list.forEach((musicData) => {
-          if (musicData.songid && musicData.albummid) {
-            ret.push(createSong(musicData))
-          }
-        })
-        return ret
       },
       _checkMore(data) {
         const song = data.song
@@ -198,6 +189,8 @@
         flex: 0 0 50px
         width: 40px
         text-align: right
+        .icon-error
+          color:red
 
       .icon
         flex: 0 0 70px

@@ -20,7 +20,7 @@
 
                     <div class="summary">
                       <div class="summaryWrap">
-                        <span>{{song.ORG_SITE}}</span> |
+                        <span v-if="song.ORG_SITE">From {{song.ORG_SITE}}</span> <span v-if="song.ORG_SITE">|</span>
                         <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
                         <span>{{song.POST_DATE|formatDate}}</span>
                         <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
@@ -186,14 +186,17 @@
         // this.$refs.articles.style.bottom = bottom
         // this.$refs.toplist.refresh()
       },
+      ...mapMutations({
+        setDownloadAll: 'SET_DOWNLOAD_ALL_STATE'
+      }),
       ...mapGetters([
         'currentSong',
-        'downloadAll'
+        'fullScreen'
       ]),
       selectItem(item, index) {
         this.selectCurIndex({index})
         let path = '/detail'
-        if (item.FEED_TYPE === 'audio') path = '/player'
+        if (item.isAudio()) path = '/player'
         console.log(item)
         this.$router.push({
           path: path

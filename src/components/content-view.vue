@@ -10,15 +10,13 @@
         <i class="icon-back"></i>
       </div>
       <div class="title" ref="title">正文<span v-if="editMode">（编辑）</span></div>
-        <admin-menu></admin-menu>
       </div>
     </div>
     <div class="middle" ref="middle">
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
           <p class="cover"><img :src="curArticle.IMG_URL" style="max-width:100%;"/></p>
-
-          <p  class="text"><a target="_blank" :href="curArticle.REFERER">{{curArticle.REFERER}}</a></p>
+          <p  class="text">文章来源:<a target="_blank" :href="curArticle.REFERER">{{curArticle.ORG_SITE}}</a></p>
           <p>{{curArticle.TITLE_CN}}</p>
           <div v-if="currentLyric" >
             <div  v-for="(line,index) in currentLyric.lines" >
@@ -31,7 +29,7 @@
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
               </lazy-component>
             </div>
-
+              <div class="copyright text" style="color: #668a66;border-top: 1px solid #ccc;padding-top: 10px;">The article content is fetched from RSS feeds and copyrighted by original site.</div>
           </div>
         </div>
       </scroll>

@@ -1,12 +1,13 @@
 <template>
-  <page :title="'订阅('+(subscriptionList&&subscriptionList.length)+')'" class="subscription"  >
+  <page :title="'RSS订阅('+(subscriptionList&&subscriptionList.length)+')'" class="subscription"
+        :menuTxt="'+新的订阅'"  @menu="rssSearch=true">
 <!--    <div style="text-align: center;font-size:16px;" @click="rssSearch=true">
       <i class="icon-add" style="font-size:16px;">添加新的订阅</i>
     </div>-->
     <div class="listCon">
-     <subscription-list :edit="edit"></subscription-list>
+     <subscription-list :edit="edit" @addnew="rssSearch=true"></subscription-list>
     </div>
-  <search class="search-rss" v-if="rssSearch" @cancel="rssSearch=false"></search>
+  <search class="search-rss" v-if="rssSearch" @cancel="rssSearch=false" ></search>
   </page>
 
 
@@ -71,13 +72,15 @@ export default {
   @import "~common/stylus/variable"
   @import "~common/stylus/mixin"
   .subscription
-    position: fixed
-    left: 0
-    right: 0
-    top: 0
-    bottom: 0
+
     z-index: 1000!important
     background: $color-background
+    .listCon
+      position:absolute
+      top:54px
+      left:0
+      right:0
+      bottom:0
     .search-rss
       position:absolute
       top:0
@@ -117,16 +120,7 @@ export default {
         no-wrap()
         font-size: $font-size-large
         color: $color-text
-   .subscription
-    position: fixed
-    width: 100%
-    top: 0px
-    bottom: 0
-    .listCon
-      position: fixed;
-      width: 100%;
-      top: 84px;
-      bottom: 0px;
+
     .toplist
       height: 100%
       overflow: hidden

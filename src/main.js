@@ -1,3 +1,6 @@
+import FastClick from 'fastclick'
+
+FastClick.attach(document.body)
 
 let codovaSrc = 'cordova.js'
 if (window.location.protocol !== 'file:') {

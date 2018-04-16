@@ -1,9 +1,18 @@
 import {decrypt2} from '../common/js/crypto'
 import axios from 'axios'
 import jsonp from 'common/js/jsonp'
+import $ from 'jquery'
+import parseFeedString from 'common/js/rss-parser'
 
+export const ERR_OK = 200
+export const FEED_STATUS = {
+  ok: 'ok',
+  fail: 'fail',
+  unknow: '',
+  checking: 'check'
+}
 let rConfig = false
-let configPromise = jsonp('http://www.jfox.info/rss/config.php', {}, {});
+let configPromise = jsonp('http://www.jfox.info/rss/config.php', {}, {})
 export async function getRConfig() {
   if (rConfig) return rConfig
   let obj = await configPromise
@@ -62,9 +71,52 @@ axios.interceptors.response.use(undefined, function axiosRetryInterceptor(err) {
     return axios(config)
   })
 })
+export async function checkFeed(feedUrl) {
+  let defaultRet = {status: FEED_STATUS.fail}
+
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
+  }
+  const data = Object.assign({}, {}, {})
+
+  try {
+    try {
+      return await axios.get(`http://www.jfox.info/rss/check.php?feed=${encodeURIComponent(feedUrl)}`, {
+        params: data,
+        headers: headers,
+        retry: 0
+      })
+    } catch (e) {
+      let resp = await axios.get(feedUrl, {
+        params: data,
+        headers: headers,
+        retry: 0
+      })
+
+      let feedObj = parseFeedString(resp.data)
+      let url = ''
+      for (let i = 0; i < feedObj.item.length; i++) {
+        url = feedObj.item[i].link
+        if (url) break
+      }
+      if (url) {
+        let resp = await axios.get(url, {
+          params: data,
+          headers: headers,
+          retry: 0
+        })
+        Object.assign(defaultRet, {feedType: resp.data.match(/\b.*?\.mp3\b/i) ? 'audio' : '', status: FEED_STATUS.ok})
+      }
+    }
+  } catch (e) {
+    console.log(e)
+  }
+  console.log(defaultRet)
+  return defaultRet
+}
 
 export function interceptUrl(url) {
-  if (window.device.platform === 'browser' && url.indexOf('http') === 0) {
+  if (window.device.platform === 'browser' && url.indexOf('api/url') === -1) {
     return location.protocol + '//' + location.host + `/api/url?url=${encodeURIComponent(url)}`
   }
   return url
@@ -83,16 +135,16 @@ export function isNetWorkOK() {
   return navigator.connection.type !== Connection.NONE
 };
 (async () => {
+  AdMob.admobid = {admobid: {}}
   let rConfig = await getRConfig()
-  var admobid = {admobid:{}};
   for (let admob in rConfig.admob) {
     if (new RegExp(admob, 'i').test(navigator.userAgent)) {
-      admobid = admob
+      AdMob.admobid = rConfig.admob[admob]
       break
     }
   }
-  AdMob.admobid = admobid
-  if (AdMob && AdMob.admobid.interstitial) AdMob.prepareInterstitial({adId: admobid.interstitial, autoShow: false})
-  if (AdMob && AdMob.admobid.reward) AdMob.prepareRewardVideoAd({adId: admobid.reward, autoShow: false})
+
+  if (AdMob && AdMob.admobid.interstitial) AdMob.prepareInterstitial({adId: AdMob.admobid.interstitial, autoShow: false})
+  if (AdMob && AdMob.admobid.reward) AdMob.prepareRewardVideoAd({adId: AdMob.admobid.reward, autoShow: false})
 })()
 

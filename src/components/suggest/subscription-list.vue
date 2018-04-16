@@ -1,14 +1,14 @@
 <template>
-  <scroll ref="suggest"
-          class="suggest"
+  <scroll ref="subscription"
+          class="subscription"
           :data="subscriptionList"
           :pullup="pullup"
           :beforeScroll="beforeScroll"
           @scrollToEnd="searchMore"
           @beforeScroll="listScroll"
   >
-    <ul class="suggest-list">
-      <li @click="selectItem(item)" class="suggest-item" v-for="item in subscriptionList">
+    <ul class="subscription-list">
+      <li @click="selectItem(item)" class="subscription-item" v-for="item in subscriptionList">
         <div class="icon" v-if="item.visualUrl">
           <div class="image" :style="'background-image: url('+item.visualUrl+');height:60px;width:60px;'"></div>
 
@@ -17,7 +17,7 @@
           <div style="position: relative;line-height:20px;">
             <span>{{item.title}}</span>
             <div @click="toggleItem(item)" style="position: absolute;top:0;right:0;">
-              <my-switch open-name="已订阅" close-name="订阅" size="lg" color="orange" :value.sync="item.enable===true"></my-switch>
+              <my-switch open-name="关闭" close-name="开启" size="lg" color="orange" :value.sync="item.enable===true"></my-switch>
             </div>
           </div>
 <!--          <div>{{item.feedId}}</div>-->
@@ -30,8 +30,8 @@
       </li>
       <loading v-show="hasMore" title=""></loading>
     </ul>
-    <div v-show="!hasMore && (!subscriptionList||!subscriptionList.length)" class="no-result-wrapper">
-      <no-result title="暂无订阅，请点击添加新的订阅"></no-result>
+    <div v-show="!hasMore && (!subscriptionList||!subscriptionList.length)" class="no-result-wrapper" @click="clickNoResult">
+      <no-result title="暂无订阅，请点击添加新的订阅" ></no-result>
     </div>
   </scroll>
 </template>
@@ -73,13 +73,16 @@
       }
     },
     methods: {
+      clickNoResult(){
+        this.$emit('addnew')
+      },
       refresh() {
-        this.$refs.suggest.refresh()
+        this.$refs.subscription.refresh()
       },
       search() {
         this.page = 1
         this.hasMore = false
-        this.$refs.suggest.scrollTo(0, 0)
+        this.$refs.subscription.scrollTo(0, 0)
         search(this.query, this.page, this.showSinger, perpage).then((res) => {
           for(let item of res){
             if(this.subscriptionList.filter(e=>e.feedId===item.feedId).length>0){
@@ -106,25 +109,14 @@
         this.$emit('listScroll')
       },
       selectItem(item) {
-/*        if (item.type === TYPE_SINGER) {
-          const singer = new Singer({
-            id: item.singermid,
-            name: item.singername
-          })
-          this.$router.push({
-            path: `/search/${singer.id}`
-          })
-          this.setSinger(singer)
-        } else {
-          this.insertSong(item)
-        }
-        this.$emit('select', item)*/
+
       },
       toggleItem(item) {
         console.log(item)
         let cloneItem = Object.assign({},item,{enable:!item.enable})
         console.log(cloneItem)
         this.toggleSubcription(cloneItem)
+
         //item.remove = !item.remove
       },
 /*      getDisplayName(item) {
@@ -196,12 +188,12 @@
   @import "~common/stylus/variable"
   @import "~common/stylus/mixin"
 
-  .suggest
+  .subscription
     height: 100%
     overflow: hidden
-    .suggest-list
+    .subscription-list
       padding: 0 10px
-      .suggest-item
+      .subscription-item
         display: flex
         align-items: center
         padding-bottom: 20px

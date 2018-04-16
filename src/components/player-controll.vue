@@ -38,6 +38,7 @@
   import Bus from 'common/js/bus'
 
   import ProgressCircle from 'base/progress-circle/progress-circle'
+  import {isNetWorkOK} from 'api/config'
 
   export default {
     data() {
@@ -79,8 +80,8 @@
           window.plugins.insomnia.allowSleepAgain()
         }
         if (AdMob) {
-          if (to.path == '/list') {
-            if (!this.adTime || Date.now() - this.adTime > 60000) {
+          if (to.path == '/list' && isNetWorkOK()) {
+            if (!this.adTime || Date.now() - this.adTime > 60*1000) {
               this.adTime = Date.now()
               AdMob.showInterstitial()
             }

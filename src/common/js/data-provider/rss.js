@@ -2,6 +2,7 @@ import tld from 'tldjs'
 const $ = require('jquery')
 import axios from 'axios'
 import {encrypt2, decrypt2} from '../crypto'
+import parseFeedString from 'common/js/rss-parser'
 
 const rssFeedId = 'rss:'
 function unescape(str) {
@@ -54,11 +55,11 @@ function extracted(text, el) {
   return {title, audio, pubDate}
 }
 function getInfoFromItem(el) {
-  let itemLink = decodeURIComponent(el.find('link').text())
+  let itemLink = decodeURIComponent(el.link)
   let link = itemLink
-  let title = entityToString(el.find('title').text())
+  let title = el.title
   let audio = ''
-  let pubDate = new Date(el.find('pubDate').text())
+  let pubDate = new Date(el.pubDate)
 
   if (itemLink.lastIndexOf('__=') > 0) {
     link = itemLink.substring(0, itemLink.lastIndexOf('__='))
@@ -90,27 +91,24 @@ function getInfoFromItem(el) {
 export const rss = {
   getItems: function(feedItem, response) {
     let results = []
-
-    $($.parseXML(response.data)).find('item').each(function () {
+    let feed = parseFeedString(response.data)
+    for (let i = 0; i < feed.item.length; i++) {
+      let feedItem = feed.item[i]
       let feedId = feedItem.feedId
-      var el = $(this)
-      var {title, audio, pubDate, link} = getInfoFromItem(el)
+      var {title, audio, pubDate, link} = getInfoFromItem(feedItem)
 
-      var thumbnail = el.find('media\\:thumbnail').attr('url')
       var domain = tld.getDomain(feedId)
       var item = {
         'REFERER': link,
         'ORG_SITE': feedItem.alias || domain,
-        'TITLE': unescape(title),
+        'TITLE': title,
         'FEED_ID': rssFeedId + feedId,
         'FEED_TYPE': feedItem.type,
         'POST_TIME': pubDate.getTime(),
-        'AUDIO_URL': audio,
-        'IMG_URL': thumbnail
+        'AUDIO_URL': audio
       }
       results.push(item)
-    })
-
+    }
     return results
   },
 
@@ -127,18 +125,16 @@ export const rss = {
         content = decrypt2(content)
       }
       console.log(content)
-
-      $($.parseXML(content)).find('item').each(function () {
-        var el = $(this)
+      let feed = parseFeedString(content)
+      for (let i = 0; i < feed.item.length; i++) {
+        let feedItem = feed.item[i]
         let $content = $('<div/>').append(
-          entityToString(el.find('description').text())
+          entityToString(feedItem.description)
         )
-        var {title, audio, pubDate} = getInfoFromItem(el)
+        var {title, audio, pubDate} = getInfoFromItem(feedItem)
         if (!detailObj.TITLE && title)detailObj.TITLE = title
         if (!detailObj.AUDIO_URL && audio)detailObj.AUDIO_URL = audio
         if (!detailObj.POST_TIME && pubDate)detailObj.POST_TIME = pubDate
-        var thumbnail = el.find('media\\:thumbnail').attr('url')
-        if (!detailObj.IMG_URL && thumbnail)detailObj.IMG_URL = thumbnail
 
         $content.find('*').filter(function() {
           return $(this).css('display') === 'none'
@@ -149,7 +145,7 @@ export const rss = {
         if (content)detailObj.CONTENT = content
         console.log(detailObj)
         return detailObj
-      })
+      }
     })
   },
   feedId: rssFeedId

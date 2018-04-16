@@ -120,9 +120,12 @@ export function saveOrDeleteSubcription(song) {
 }
 export function addSubcription(song) {
   let songs = storage.get(SUBSCRIPTION_KEY, [])
+  console.log('addSubcription')
   const index = songs.findIndex(e => e.feedId === song.feedId)
   if (index > -1) {
-    Object.assign(songs[index], song)
+    if (!song.status) {
+      songs.splice(index,1);
+    } else Object.assign(songs[index], song)
   } else {
     songs.push(song)
   }
