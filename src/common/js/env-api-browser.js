@@ -1,6 +1,6 @@
 // const url = require('url')
 // const Queue =require('promise-queue')
-import {interceptUrl} from "../../api/config";
+import {interceptUrl} from '../../api/config'
 // var queue = new Queue(1, Infinity)
 import dbDdl from 'common/js/db-ddl'
 
@@ -83,7 +83,7 @@ function tranformName(str) {
 export function getLatestArticles() {
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
-      let sql = `SELECT * FROM  T_ARTICLE ORDER BY POST_DATE DESC`
+      let sql = `SELECT t.* ,f.* FROM  T_ARTICLE t,t_feed f where t.feed_id = f.feed_id  ORDER BY POST_DATE DESC`
 
       tx.executeSql(sql, [], function (tx, results) {
         var contents = []
@@ -101,13 +101,11 @@ export function getLatestArticles() {
 }
 
 export function getOldArticlesAndMarkDelete(time) {
-
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
       let sql = `UPDATE T_ARTICLE SET STATUS = 'D' WHERE POST_DATE< ${time} AND STATUS='A'`
 
       tx.executeSql(sql, [], function (tx, results) {
-
         resolve()
       }, function (tx, error) {
         reject(error)
@@ -134,13 +132,11 @@ export function getOldArticlesAndMarkDelete(time) {
 }
 
 export function deleteAllOldArticles() {
-
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
       let sql = `delete from T_ARTICLE  WHERE STATUS='D'`
 
       tx.executeSql(sql, [], function (tx, results) {
-
         resolve()
       }, function (tx, error) {
         reject(error)
@@ -188,6 +184,35 @@ export function saveArticles(articles) {
   })
 }
 
+export function saveFeed(feed) {
+  console.log(feed)
+  return new Promise((resolve, reject) => {
+    webdb.transaction(function (tx) {
+      let sql = `insert into T_FEED(FEED_ID,FEED_TYPE,FEED_ALIAS,FEED_STATUS) values(?,?,?,?)`
+      tx.executeSql(sql, [feed.feedId, feed.feedType||'', feed.title||'', feed.status||''], function (tx, result) {
+        resolve()
+        console.log(result)
+      }, function (tx, error) {
+        console.log(error)
+        reject(error)
+      })
+    })
+  })
+}
+export function removeFeed(feed) {
+  return new Promise((resolve, reject) => {
+    webdb.transaction(function (tx) {
+      let sql = `delete from t_feed where feed_id=?`
+      tx.executeSql(sql, [feed.feedId], function (tx, result) {
+        resolve()
+        console.log(result)
+      }, function (tx, error) {
+        console.log(error)
+        reject(error)
+      })
+    })
+  })
+}
 export function getOrUpdateConfig(name, value) {
   return new Promise((resolve, reject) => {
     let ret

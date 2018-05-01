@@ -27,7 +27,7 @@
                  :id="'line'+index"
                  class="text"
                  :class="{'current': currentLyric.curNum-1 ===index}"
-                 v-html="format(line.time/1000)+ '  ' +line.txt" @click="playTime(line.time)">
+                 v-html="line.txt" @click="playTime(line.time)">
               </p>
               <lazy-component @show="handlerTS(index,line)" class="text" v-if="LRC" >
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
@@ -240,7 +240,7 @@
         return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
       },
       disableCls() {
-        return !this.curArticle.AUDIO_URL
+        return !this.curArticle.isAudio()
       },
       lyricFollowCls() {
         return this.lyricFollow ? '' : 'not-lyricFollow'
@@ -446,15 +446,20 @@
         })()
       },
       getLyric: function () {
-        if (this.LRC && this.curArticle.LRC_OK === '2') return
+        if (this.LRC && this.curArticle.LRC_OK !== '3') return
         return (async () => {
+          this.LRC=false
           this.loadingTitle = '正在加载内容'
           let id = this.curArticle.ID
           let {lines, lyric} = await this.curArticle.getLyric()
           if (id !== this.curArticle.ID) return
           this.lines = lines
           this.trlines = [...Array(lines.length)].map((_, i) => false)
-          this.LRC = true
+          console.log(this)
+          //window.vue=this
+          setTimeout(()=>{
+            this.LRC = true
+          },1000);
 
           if (this.currentLyric) {
             this.currentLyric.stop()

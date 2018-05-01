@@ -1,6 +1,6 @@
 <template>
   <page :title="'RSS订阅('+(subscriptionList&&subscriptionList.length)+')'" class="subscription"
-        :menuTxt="'+新的订阅'"  @menu="rssSearch=true">
+        :menuTxt="menuTxt"  @menu="rssSearch=true">
 <!--    <div style="text-align: center;font-size:16px;" @click="rssSearch=true">
       <i class="icon-add" style="font-size:16px;">添加新的订阅</i>
     </div>-->
@@ -19,18 +19,25 @@
   import {mapGetters, mapActions} from 'vuex'
   import SubscriptionList from './suggest/subscription-list'
   import SubscriptionSearchBox from '../base/search-box/subscription-search-box'
+  import {getRConfig} from 'api/config'
 
 export default {
     created() {
 
     },
     mounted() {
+      getRConfig().then((config) => {
+        this.menuTxt = config.menu.addSubscription
+        console.log('menuTxt')
+        console.log(this)
+      })
     },
     data() {
       return {
         fullScreen: true,
         rssSearch: false,
-        edit: false
+        edit: false,
+        menuTxt: '+新的订阅'
       }
     },
     filters: {

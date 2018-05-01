@@ -1,5 +1,5 @@
 import storage from 'good-storage'
-
+import * as envApi from './env-api'
 const SEARCH_KEY = '__search__'
 const SEARCH_MAX_LEN = 15
 
@@ -101,37 +101,26 @@ export function loadSubscriptionList() {
   console.log(obj)
   return obj
 }
-export function saveOrDeleteSubcription(song) {
-  let songs = storage.get(SUBSCRIPTION_KEY, [])
-  console.log('saveOrDeleteSubcription')
 
-  if (songs.filter(e => e.feedId === song.feedId).length > 0) {
-    deleteFromArray(songs, (item) => {
-      return item.feedId === song.feedId
-    })
-  } else {
-    insertArray(songs, song, (item) => {
-      return song.feedId === item.feedId
-    }, FAVORITE_MAX_LEN)
-  }
-
-  storage.set(SUBSCRIPTION_KEY, songs)
-  return songs
-}
-export function addSubcription(song) {
+export function addSubcription(feed) {
   let songs = storage.get(SUBSCRIPTION_KEY, [])
   console.log('addSubcription')
-  const index = songs.findIndex(e => e.feedId === song.feedId)
+  const index = songs.findIndex(e => e.feedId === feed.feedId)
+  envApi.removeFeed(feed)
+  if (feed.status && feed.enable) {
+    envApi.saveFeed(feed)
+  }
+
   if (index > -1) {
-    if (!song.status) {
-      songs.splice(index,1);
-    } else Object.assign(songs[index], song)
+    if (!feed.status) {
+      songs.splice(index, 1)
+    } else Object.assign(songs[index], feed)
   } else {
-    songs.push(song)
+    songs.push(feed)
   }
 
   storage.set(SUBSCRIPTION_KEY, songs)
-  console.log(song)
+  console.log(feed)
   return songs
 }
 export function getOrSetRefreshTime(updateTime) {

@@ -24,9 +24,9 @@
           </i>
         </div>
       </li>
-      <loading v-show="hasMore" title=""></loading>
+      <loading v-show="showLoading" title=""></loading>
     </ul>
-    <div v-show="!hasMore && !result.length" class="no-result-wrapper">
+    <div v-show="!showLoading&&!hasMore && !result.length" class="no-result-wrapper">
       <no-result title="抱歉，暂无搜索结果"></no-result>
     </div>
   </scroll>
@@ -60,6 +60,7 @@
         pullup: true,
         beforeScroll: true,
         hasMore: true,
+        showLoading: false,
         result: []
       }
     },
@@ -71,6 +72,7 @@
         this.page = 1
         this.hasMore = false
         this.$refs.suggest.scrollTo(0, 0)
+        this.showLoading = true
         search(this.query, this.page, this.showSinger, perpage).then((res) => {
           for (let item of res) {
             item.feedId = item.feedId.substring(5)
@@ -80,6 +82,7 @@
           }
           this.result = res
           console.log(this.result)
+          this.showLoading = false
         })
       },
       searchMore() {
@@ -109,10 +112,13 @@
             Object.assign(item, result)
           } else if (item.status === FEED_STATUS.ok) {
             item.status = FEED_STATUS.unknow
+            item.enable = false
+          }
+          if(FEED_STATUS.fail!=item.status){
+            this.toggleSubcription(item)
+            this.$emit('select', item)
           }
 
-          this.toggleSubcription(item)
-          this.$emit('select', item)
         })()
       },
 /*      getDisplayName(item) {

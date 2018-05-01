@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS t_article(
    POST_DATE  TEXT,
    STATUS  TEXT DEFAULT 'A',
    FEED_ID    TEXT,
-   FEED_TYPE    TEXT,
    LAST_DOWNLOAD_DATE TEXT
 )
 `
@@ -31,5 +30,14 @@ CREATE TABLE IF NOT EXISTS T_DICT(
    AUDIO TEXT
 )
 `
+const feedDDL = `
+CREATE TABLE IF NOT EXISTS T_FEED(
+   FEED_ID           TEXT PRIMARY KEY,
+   FEED_TYPE         TEXT,
+   FEED_ALIAS         TEXT,
+   FEED_STATUS         TEXT
+)
+`
 module.exports.ddl = ddl
 module.exports.dictDDL = dictDDL
+module.exports.feedDDL = feedDDL

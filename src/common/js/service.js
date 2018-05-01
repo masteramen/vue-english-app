@@ -4,7 +4,7 @@ import * as envApi from './env-api'
 import {runAll} from 'common/js/runs'
 import * as ts from 'common/js/translation'
 import {formate2Lyric} from './util'
-import {interceptUrl} from '../../api/config'
+import {interceptUrl,getAudioUrl} from '../../api/config'
 
 const dataManager = require('./data-manager')
 
@@ -147,6 +147,7 @@ export function getLatestArticles() {
   // return Promise.reject()
 }
 import {getOrSetSetting} from './cache'
+
 export async function fetchLatest() {
   let time = new Date().getTime() - 86400000 * getOrSetSetting().nDay
   let oldArticles = await envApi.getOldArticlesAndMarkDelete(time)
@@ -173,7 +174,7 @@ export class Article {
     return this.AUDIO_URL || this.FEED_TYPE === 'audio'
   }
   async tsTitle() {
-    if (this.TITLE_CN) return
+    if (this.TITLE_CN || this.TITLE.match(/[\u4e00-\u9fa5]/)) return
     let dict = await ts.translateWithAudio(this.TITLE)
     this.TITLE_CN = dict.result[0]
     await dataManager.update(this)
@@ -201,7 +202,8 @@ export class Article {
         split.shift()
         this.TITLE_CN = split.shift()
         let transArr = split.filter((s, i) => i % 2 === 1)
-        lyric = split.filter((s, i) => i % 2 === 0).join('\n')
+        lyric = split.filter((s, i) => i % 2 === 0).map(x => x.match(/^\[\d+/) ? x.replace(/([a-z]+)/gi, '<span>$1</span>') : x).join('\n')
+
         lines = split.filter((s, i) => i % 2 === 0).map(x => x.replace(/\[.*?\]/))
 
         for (let i = 0; i < transArr.length; i++) {
@@ -260,12 +262,16 @@ export class Article {
     return dict.result[0]
   }
 
-  getAudio(onProgress, downLoadQueue) {
+  async getAudio(onProgress, downLoadQueue) {
     if (!this.AUDIO_URL) {
-      return Promise.reject({code: 1, desc: '找不到音频文件！'})
+      if (this.AUDIO_URL !== false) {
+        this.AUDIO_URL = await getAudioUrl(this.REFERER)
+      }
     }
+    if (!this.AUDIO_URL) throw new Error({code: 1, desc: '找不到音频文件！'})
+
     if (navigator.connection.type === Connection.CELL && getOrSetSetting().checklistValues.indexOf('download-cell-net-work') === -1) {
-      return Promise.reject({code: 0, desc: '请先设置开启手机网络下载音频选项！'})
+      throw new Error({code: 0, desc: '请先设置开启手机网络下载音频选项！'})
     }
     return downloadAudio(this, onProgress, downLoadQueue)
   }
@@ -279,7 +285,6 @@ export function createArticle(row) {
   row.percent = 0
   return new Article(row)
 }
-
 
 export function getDict(text) {
   return dataManager.getDict(text).then(dicts => {

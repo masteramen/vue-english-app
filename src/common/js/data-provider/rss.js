@@ -3,14 +3,9 @@ const $ = require('jquery')
 import axios from 'axios'
 import {encrypt2, decrypt2} from '../crypto'
 import parseFeedString from 'common/js/rss-parser'
+import {host} from 'api/config'
 
-const rssFeedId = 'rss:'
-function unescape(str) {
-  var elem = document.createElement('div')
-  elem.innerHTML = str
-  return elem.innerText || elem.textContent
-}
-
+const rssFeedId = ''
 String.prototype.endWith = function(str) {
   if (str == null || str == '' || this.length == 0 || str.length > this.length) { return false }
   if (this.substring(this.length - str.length) == str) { return true } else { return false }
@@ -27,43 +22,18 @@ function entityToString(entity) {
   console.log(entity, '->', res)
   return res
 }
-function extracted(text, el) {
-  var texts = text.split('|')
-  var title = text
-  var audio = ''
-  var pubDate = new Date(el.find('pubDate').text())
-  if (texts.length > 1) {
-    title = texts.shift()
-    texts.forEach(t => {
-      if (t.toLowerCase().endsWith('.mp3')) {
-        audio = t
-      } else if (t.toLowerCase().endsWith('.lrc')) {
-
-      }
-
-      var dateM = t.match(/(\d{4})(\d{2})(\d{2})/)
-      console.log(JSON.stringify(dateM))
-      if (dateM) pubDate = new Date(`${dateM[1]}-${dateM[2]}-${dateM[3]}`)
-      else {
-        dateM = t.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
-        console.log(JSON.stringify(dateM))
-
-        if (dateM) pubDate = new Date(`${dateM[1]}-${PrefixInteger(dateM[2], 2)}-${PrefixInteger(dateM[3], 2)}`)
-      }
-    })
-  }
-  return {title, audio, pubDate}
-}
 function getInfoFromItem(el) {
   let itemLink = decodeURIComponent(el.link)
   let link = itemLink
   let title = el.title
   let audio = ''
   let pubDate = new Date(el.pubDate)
+  console.log(`itemLink:${itemLink}`)
 
   if (itemLink.lastIndexOf('__=') > 0) {
     link = itemLink.substring(0, itemLink.lastIndexOf('__='))
     let linkInfo = itemLink.substring(itemLink.lastIndexOf('__=') + 3)
+    console.log(`linkInfo:${linkInfo}`)
     var texts = linkInfo.split('|')
     if (texts.length > 0) {
       texts.forEach(t => {
@@ -93,21 +63,20 @@ export const rss = {
     let results = []
     let feed = parseFeedString(response.data)
     for (let i = 0; i < feed.item.length; i++) {
-      let feedItem = feed.item[i]
+      let item = feed.item[i]
       let feedId = feedItem.feedId
-      var {title, audio, pubDate, link} = getInfoFromItem(feedItem)
+      var {title, audio, pubDate, link} = getInfoFromItem(item)
 
       var domain = tld.getDomain(feedId)
-      var item = {
+      results.push({
         'REFERER': link,
         'ORG_SITE': feedItem.alias || domain,
         'TITLE': title,
         'FEED_ID': rssFeedId + feedId,
-        'FEED_TYPE': feedItem.type,
+        'FEED_TYPE': feedItem.feedType,
         'POST_TIME': pubDate.getTime(),
         'AUDIO_URL': audio
-      }
-      results.push(item)
+      })
     }
     return results
   },
@@ -118,7 +87,7 @@ export const rss = {
     // let feed = `http://www.jfox.info/rss/?feed=${detailObj.FEED_ID.substring(rssFeedId.length)}&link=${detailObj.REFERER}&title=${detailObj.TITLE}`
 
     let encryptStr = encrypt2(JSON.stringify({feed: detailObj.FEED_ID, link: detailObj.REFERER, title: detailObj.TITLE, lyric: detailObj.CONTENT ? 1 : 0}))
-    let feed = `http://www.jfox.info/rss/?_e=${encodeURIComponent(encryptStr)}`
+    let feed = `${host}/rss/?_e=${encodeURIComponent(encryptStr)}`
     return axios.get(feed, {}).then((res) => {
       let content = res.data.trim()
       if (content.indexOf('<item>') === -1) {

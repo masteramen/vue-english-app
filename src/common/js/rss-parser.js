@@ -8,7 +8,6 @@ function unescape(str) {
 export default function parseFeedString(xml) {
   let feed = {item: []}
   let $xml = $($.parseXML(xml));
-  window.xml = $xml;
   if ($xml.find('item').length > 0) {
     $xml.find('item').each(function () {
       var el = $(this)

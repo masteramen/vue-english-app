@@ -5,14 +5,23 @@ import $ from 'jquery'
 import parseFeedString from 'common/js/rss-parser'
 
 export const ERR_OK = 200
+
+export const headers = {
+  // 'referer': 'https://feedly.com',
+  'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36',
+  'Connection': 'close',
+  //   'Accept-Language': 'zh-CN'
+}
 export const FEED_STATUS = {
   ok: 'ok',
   fail: 'fail',
   unknow: '',
   checking: 'check'
 }
+export let host = 'http://www.jfox.info'
+if(location.href.endsWith('debug')) host = 'http://localhost'
 let rConfig = false
-let configPromise = jsonp('http://www.jfox.info/rss/config.php', {}, {})
+let configPromise = jsonp(`${host}/rss/config.php`, {}, {})
 export async function getRConfig() {
   if (rConfig) return rConfig
   let obj = await configPromise
@@ -71,12 +80,28 @@ axios.interceptors.response.use(undefined, function axiosRetryInterceptor(err) {
     return axios(config)
   })
 })
+export async function getAudioUrl(url) {
+  const data = Object.assign({}, {}, {})
+  let resp = await axios.get(url, {
+    params: data,
+    headers: headers,
+    retry: 3
+  })
+  let aurl = resp.data.match(/([^"']*?\.mp3)["']/i)[1]
+  if(!aurl.match(/http[s]?:\/\//)){
+    if(aurl[0]==='/'){
+      aurl = url.split('//')[0]+'//'+url.split('//')[1].split(/\//)[0]+aurl
+    }else{
+      aurl = url.substring(0,url.lastIndexOf("/"))+'/'+aurl;
+    }
+  }
+
+  console.log('aurl:'+aurl)
+  return aurl
+}
 export async function checkFeed(feedUrl) {
   let defaultRet = {status: FEED_STATUS.fail}
 
-  const headers = {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36'
-  }
   const data = Object.assign({}, {}, {})
 
   try {

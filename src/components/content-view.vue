@@ -16,7 +16,7 @@
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
           <p class="cover"><img :src="curArticle.IMG_URL" style="max-width:100%;"/></p>
-          <p  class="text">文章来源:<a target="_blank" :href="curArticle.REFERER">{{curArticle.ORG_SITE}}</a></p>
+          <p  class="text" v-html="headerContent"></p>
           <p>{{curArticle.TITLE_CN}}</p>
           <div v-if="currentLyric" >
             <div  v-for="(line,index) in currentLyric.lines" >
@@ -29,7 +29,7 @@
                 <p class="text" v-if="trlines[index]">{{trlines[index]}}</p>
               </lazy-component>
             </div>
-              <div class="copyright text" style="color: #668a66;border-top: 1px solid #ccc;padding-top: 10px;">The article content is fetched from RSS feeds and copyrighted by original site.</div>
+              <div class="text" v-html="footContent"></div>
           </div>
         </div>
       </scroll>
@@ -54,6 +54,8 @@
   import {createArticle, getDict} from 'common/js/service'
   import Loading from 'base/loading/loading'
   import AdminMenu from './m-header/admin-menu'
+  import {getRConfig} from 'api/config'
+
   export default {
     data() {
       return {
@@ -65,7 +67,9 @@
         loadingTitle: '',
         reload: true,
         trlines: [],
-        lines:[]
+        lines:[],
+        footContent:'',
+        headerContent:''
       }
     },
     created() {
@@ -197,8 +201,12 @@
       currentIndex(newIndex, oldIndex) {
 
         let currentArticle = window.sequenceList[(this.mode === playMode.random ? window.randomList[newIndex] : newIndex)]
+
+
         if(currentArticle.isAudio()) return
         this.curArticle = currentArticle
+
+
         this.$refs.lyricList.scrollTo(0, 0)
         if (this.currentLyric) {
           // this.currentLyric.seek(0)

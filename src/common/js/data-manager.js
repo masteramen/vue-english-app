@@ -10,6 +10,8 @@ const db = require('./env-api')
 const jobConfigs = []
 db.run(dbDDL.ddl)
 db.run(dbDDL.dictDDL)
+db.run(dbDDL.feedDDL)
+console.log('feedddl')
 function update(detail) {
   console.log(detail)
   return new Promise((resolve, reject) => {
@@ -24,9 +26,9 @@ function update(detail) {
 
 function insert(DETAIL) {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,POST_DATE,AUTHOR,TOTAL,FEED_ID,FEED_TYPE) VALUES(?,?,?,?,?,?,?,?,?,?,?)',
+    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,POST_DATE,AUTHOR,TOTAL,FEED_ID) VALUES(?,?,?,?,?,?,?,?,?,?)',
       DETAIL.TITLE || '', DETAIL.CONTENT || '', DETAIL.AUDIO_URL || '', DETAIL.IMG_URL || '', DETAIL.ORG_SITE || '',
-      DETAIL.REFERER || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID, DETAIL.FEED_TYPE
+      DETAIL.REFERER || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID
       , err => {
         console.log(err)
         if (err) {
@@ -121,15 +123,22 @@ function findById(id) {
     })
   })
 }
+
+
+
 async function runJobs() {
   let subscriptList = loadSubscriptionList().filter(e => e.enable)
 
   for (let item of subscriptList) {
-    let response = await getResponse(item.feedId)
-    // let response = await getResponse('https://feed43.com/6302168535022045.xml')
+    try {
+      let response = await getResponse(item.feedId)
+      // let response = await getResponse('https://feed43.com/6302168535022045.xml')
 
-    let results = rss.getItems(item, response)
-    await getList(item.feedId, results)
+      let results = rss.getItems(item, response)
+      await getList(item.feedId, results)
+    } catch (e) {
+      console.log(e)
+    }
   }
 }
 async function getDetail(detailObj) {
@@ -200,7 +209,7 @@ function getRecentDictList() {
     })
   })
 }
-export  async function removeDict(item){
+export async function removeDict(item) {
   return new Promise((resolve, reject) => {
     db.all(`delete from t_dict where qtext='${item.QTEXT}'`, function(err, rows) {
       if (err)console.log(err)
@@ -224,8 +233,8 @@ export async function getDictListBy(list) {
     })
   })
 }
-function saveDict({qtext, result, detail, audio,ADD_DATE}) {
-  db.run('INSERT INTO T_dict (qtext,result,detail,audio,ADD_DATE) VALUES(?,?,?,?,?)', qtext, result, detail, audio,ADD_DATE
+function saveDict({qtext, result, detail, audio, ADD_DATE}) {
+  db.run('INSERT INTO T_dict (qtext,result,detail,audio,ADD_DATE) VALUES(?,?,?,?,?)', qtext, result, detail, audio, ADD_DATE
     , err => {
       console.log(err)
       if (err) {

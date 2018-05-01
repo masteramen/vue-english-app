@@ -20,7 +20,7 @@
 
                     <div class="summary">
                       <div class="summaryWrap">
-                        <span v-if="song.ORG_SITE">From {{song.ORG_SITE}}</span> <span v-if="song.ORG_SITE">|</span>
+                        <span v-if="song.ORG_SITE">{{song.ORG_SITE}}</span> <span v-if="song.ORG_SITE">|</span>
                         <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
                         <span>{{song.POST_DATE|formatDate}}</span>
                         <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
@@ -36,7 +36,10 @@
               </ul>
             </div>
             <div class="loading-container" v-show="!songs.length">
-              <loading></loading>
+              <loading v-if="subscriptionList.length!==0"></loading>
+              <div v-if="subscriptionList.length===0" style="color:black;line-height: 2em;" >
+                你还没有添加订阅源，请先点击 订阅 -&gt; <span>+新的订阅</span> 或者点击 <b style="color:green;" @click="addNewSubscription()">这里</b> 添加订阅源。
+              </div>
             </div>
           </scroll>
 
@@ -74,13 +77,13 @@
         }, time)
 
         let rConfig = await getRConfig()
-        let first = !this.subscriptionList || this.subscriptionList.length === 0
+        // let first = !this.subscriptionList || this.subscriptionList.length === 0
         if (rConfig.rss && rConfig.rss.items) {
           for (let subscription of rConfig.rss.items) {
-            console.log(subscription)
-            if (first) {
-              subscription.enable = true
-            }
+           // console.log(subscription)
+          //  if (first) {
+            //  subscription.enable = true
+           // }
             this.saveSubcription(subscription)
           }
         }
@@ -115,6 +118,11 @@
       }
     },
     methods: {
+      addNewSubscription() {
+        this.$router.push({
+          path: `/subscription`
+        })
+      },
       onSlideChangeStart (currentPage) {
         console.log('onSlideChangeStart', currentPage)
       },
@@ -125,7 +133,7 @@
         downloadArtilePic(item)
       },
       handlerTSCNTITLE(item) {
-        if (!item.TITLE_CN) {
+        if (!item.TITLE_CN && !item.TITLE.match(/[\u4e00-\u9fa5]/)) {
           (async () => {
             await item.tsTitle()
             this.$refs.toplist.refresh()
@@ -156,10 +164,10 @@
         fetchLatest()
           .then(contents => {
             this.lastFetchTime = new Date().getTime()
-            getOrSetRefreshTime(this.lastFetchTime )
+            getOrSetRefreshTime(this.lastFetchTime)
             return this._getLatestArticles()
           }).then(() => {
-            this.$refs.topli//  lllkkst./////(true)
+            this.$refs.toplist.forceUpdate(true)
             this.reload = false
             setTimeout(_ => this.reload = true, 200)
           })
@@ -242,6 +250,10 @@
             })()
           }, 0)
         }
+      },
+      subscriptionList() {
+        this._getLatestArticles()
+        this.pulldownRefreshDataList()
       }
     },
     components: {
