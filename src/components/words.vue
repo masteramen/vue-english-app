@@ -38,7 +38,7 @@
   import {getData} from 'common/js/dom'
   import {getDictList,getRecentDictList,removeDict} from 'common/js/service'
   const ANCHOR_HEIGHT = 18
-  const TITLE_HEIGHT = 30
+  const title_HEIGHT = 30
 
   export default {
     created() {
@@ -222,7 +222,7 @@
         this.currentIndex = listHeight.length - 2
       },
       diff(newVal) {
-        let fixedTop = (newVal > 0 && newVal < TITLE_HEIGHT) ? newVal - TITLE_HEIGHT : 0
+        let fixedTop = (newVal > 0 && newVal < title_HEIGHT) ? newVal - title_HEIGHT : 0
         if (this.fixedTop === fixedTop) {
           return
         }

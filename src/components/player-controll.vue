@@ -36,6 +36,7 @@
 <script type="text/ecmascript-6">
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import Bus from 'common/js/bus'
+  import {ifAd} from '../common/js/cache'
 
   import ProgressCircle from 'base/progress-circle/progress-circle'
   import {isNetWorkOK} from 'api/config'
@@ -63,7 +64,7 @@
         'playing'
       ]),
       logo() {
-        return this.curArticle.IMG_URL || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
+        return this.curArticle.thumb || decodeURIComponent(cordova.file.applicationDirectory + 'www/no-image.png')
       }
     },
     watch: {
@@ -80,7 +81,7 @@
           window.plugins.insomnia.allowSleepAgain()
         }
         if (AdMob) {
-          if (to.path == '/list' && isNetWorkOK()) {
+          if (to.path == '/list' && isNetWorkOK() && ifAd()) {
             if (!this.adTime || Date.now() - this.adTime > 60*1000) {
               this.adTime = Date.now()
               AdMob.showInterstitial()

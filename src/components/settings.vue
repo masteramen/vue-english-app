@@ -66,20 +66,20 @@
           }],
         nDayOptions: [
           {
-            label: '2天',
-            value: '2'
-          },
-          {
             label: '3天',
             value: '3'
           },
           {
-            label: '4天',
-            value: '4'
+            label: '6天',
+            value: '6'
           },
           {
-            label: '5天',
-            value: '5'
+            label: '10天',
+            value: '10'
+          },
+          {
+            label: '15天',
+            value: '15'
           }],
 
         settingList: ['voa', 'bbc'],

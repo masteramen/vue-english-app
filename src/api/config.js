@@ -19,7 +19,8 @@ export const FEED_STATUS = {
   checking: 'check'
 }
 export let host = 'http://www.jfox.info'
-if(location.href.endsWith('debug')) host = 'http://localhost'
+//host = 'http://192.168.1.126/wordpress'
+//if(location.href.endsWith('debug')) host = 'http://localhost'
 let rConfig = false
 let configPromise = jsonp(`${host}/rss/config.php`, {}, {})
 export async function getRConfig() {
@@ -81,13 +82,15 @@ axios.interceptors.response.use(undefined, function axiosRetryInterceptor(err) {
   })
 })
 export async function getAudioUrl(url) {
+  //return null;
+
   const data = Object.assign({}, {}, {})
   let resp = await axios.get(url, {
     params: data,
     headers: headers,
     retry: 3
   })
-  let aurl = resp.data.match(/([^"']*?\.mp3)["']/i)[1]
+  let aurl = resp.data.match(/([^"']*?\.mp[34])["']/i)[1]
   if(!aurl.match(/http[s]?:\/\//)){
     if(aurl[0]==='/'){
       aurl = url.split('//')[0]+'//'+url.split('//')[1].split(/\//)[0]+aurl

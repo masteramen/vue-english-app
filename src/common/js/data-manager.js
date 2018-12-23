@@ -15,8 +15,8 @@ console.log('feedddl')
 function update(detail) {
   console.log(detail)
   return new Promise((resolve, reject) => {
-    db.run('UPDATE T_ARTICLE SET TITLE=?,TITLE_CN=?,CONTENT=?,AUDIO_URL=?,IMG_URL=?,AUTHOR=?,TOTAL=?,DURATION=?,LRC_OK=? WHERE REFERER=?',
-      detail.TITLE || '', detail.TITLE_CN || '', detail.CONTENT || '', detail.AUDIO_URL || '', detail.IMG_URL || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.LRC_OK || '', detail.REFERER || ''
+    db.run('UPDATE T_ARTICLE SET title=?,title_CN=?,CONTENT=?,audio=?,thumb=?,AUTHOR=?,TOTAL=?,DURATION=?,LRC_OK=? WHERE link=?',
+      detail.title || '', detail.title_CN || '', detail.CONTENT || '', detail.audio || '', detail.thumb || '', detail.BY || '', detail.TOTAL || '', detail.DURATION || '', detail.LRC_OK || '', detail.link || ''
       , err => {
         console.log(err)
         resolve()
@@ -26,9 +26,9 @@ function update(detail) {
 
 function insert(DETAIL) {
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO T_ARTICLE (TITLE,CONTENT,AUDIO_URL,IMG_URL,ORG_SITE,REFERER,POST_DATE,AUTHOR,TOTAL,FEED_ID) VALUES(?,?,?,?,?,?,?,?,?,?)',
-      DETAIL.TITLE || '', DETAIL.CONTENT || '', DETAIL.AUDIO_URL || '', DETAIL.IMG_URL || '', DETAIL.ORG_SITE || '',
-      DETAIL.REFERER || '', DETAIL.POST_TIME || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.FEED_ID
+    db.run('INSERT INTO T_ARTICLE (title,CONTENT,audio,thumb,ORG_SITE,link,pubDate,AUTHOR,TOTAL,feedId) VALUES(?,?,?,?,?,?,?,?,?,?)',
+      DETAIL.title || '', DETAIL.CONTENT || '', DETAIL.audio || '', DETAIL.thumb || '', DETAIL.ORG_SITE || '',
+      DETAIL.link || '', DETAIL.pubDate || '', DETAIL.BY || '', DETAIL.TOTAL || '', DETAIL.feedId
       , err => {
         console.log(err)
         if (err) {
@@ -45,12 +45,16 @@ async function getList(theurl, results) {
   let time = new Date().getTime() - 86400000 * getOrSetSetting().nDay
   for (let detailObj of results) {
     try {
-      let row = await isExist(detailObj)
+      let row
+      try {
+        row = await isExist(detailObj)
+      } catch (e) {}
+
       if (row && row.ID) continue
-      console.log(detailObj.POST_TIME)
+      console.log(detailObj.pubDate)
+      console.log(detailObj['pubDate'])
       console.log(time)
-      console.log(JSON.stringify(detailObj))
-      if (detailObj.POST_TIME > time) await insert(detailObj)
+      if (new Date(detailObj['pubDate']).getTime() > time) await insert(detailObj)
     } catch (e) {
       console.log(e)
     }
@@ -59,7 +63,7 @@ async function getList(theurl, results) {
 
 function isExist(DETAIL) {
   return new Promise((resolve, reject) => {
-    let sql = `SELECT *,count(1) as c FROM T_ARTICLE WHERE REFERER='${DETAIL.REFERER} group by REFERER'`
+    let sql = `SELECT *,count(1) as c FROM T_ARTICLE WHERE link='${DETAIL.link}' group by link`
     console.log(sql)
     db.all(sql, (error, rows) => {
       console.log('error:' + error)
@@ -96,7 +100,7 @@ async function getDetailPage(detailObj, item) {
   if (item.url2io) {
     await item.url2io(detailObj)
   } else {
-    let response = await getResponse(detailObj.REFERER)
+    let response = await getResponse(detailObj.link)
     item.getDetail(response, detailObj)
     if (!detailObj || !detailObj.URL) return detailObj
     let totalBytes = await getContentLen(detailObj)
@@ -107,9 +111,9 @@ async function getDetailPage(detailObj, item) {
 function getArticlesBasicInfo(lastTime) {
   console.log(lastTime)
   let fromTime = lastTime || 1
-  console.log(`SELECT ID,TITLE,TITLE_CN,POST_DATE,AUTHOR,referer,TOTAL,LRC_OK FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`)
+  console.log(`SELECT ID,title,title_CN,pubDate,AUTHOR,referer,TOTAL,LRC_OK FROM t_article where pubDate > ${fromTime} order by pubDate desc`)
   return new Promise((resolve, reject) => {
-    db.all(`SELECT id,org_site,title,POST_DATE,AUTHOR,referer ,IMG_URL,AUDIO_URL,TOTAL FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`, function(err, all) {
+    db.all(`SELECT id,org_site,title,pubDate,AUTHOR,referer ,thumb,audio,TOTAL FROM t_article where pubDate > ${fromTime} order by pubDate desc`, function(err, all) {
       if (err)console.log(err)
       resolve(all)
     })
@@ -123,8 +127,6 @@ function findById(id) {
     })
   })
 }
-
-
 
 async function runJobs() {
   let subscriptList = loadSubscriptionList().filter(e => e.enable)
@@ -143,11 +145,11 @@ async function runJobs() {
 }
 async function getDetail(detailObj) {
   let feedEngineer = null
-  if (detailObj.FEED_ID.indexOf(rss.feedId) === 0) {
+  if (detailObj.feedId.indexOf(rss.feedId) === 0) {
     feedEngineer = rss
   } else {
     for (let item of jobConfigs) {
-      if (detailObj.FEED_ID === item.feedId) {
+      if (detailObj.feedId === item.feedId) {
         feedEngineer = item
         break
       }
@@ -173,7 +175,6 @@ function getDict(text) {
       for (let i = 0; i < rows.length; i++) {
         contents.push(rows.item(i))
       }
-      console.log(contents)
       resolve(contents)
     })
   })
@@ -189,7 +190,6 @@ function getDictList() {
       for (let i = 0; i < rows.length; i++) {
         contents.push(rows.item(i))
       }
-      console.log(contents)
       resolve(contents)
     })
   })
@@ -198,13 +198,11 @@ function getRecentDictList() {
   return new Promise((resolve, reject) => {
     db.all(`select * from t_dict order by ADD_DATE desc limit 5`, function(err, rows) {
       if (err)console.log(err)
-      console.log(rows)
       var contents = []
 
       for (let i = 0; i < rows.length; i++) {
         contents.push(rows.item(i))
       }
-      console.log(contents)
       resolve(contents)
     })
   })
@@ -228,7 +226,6 @@ export async function getDictListBy(list) {
       for (let i = 0; i < rows.length; i++) {
         contents.push(rows.item(i))
       }
-      console.log(contents)
       resolve(contents)
     })
   })

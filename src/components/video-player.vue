@@ -1,228 +1,145 @@
 <template>
-  <div class="video-player" v-if="reseted">
-    <video id="preview-player" class="video-js" ref="video"></video>
+  <div class="video-player" v-if="reseted" style="
+    height: 150px;
+    background: #000;
+    position: relative;
+"
+       :style="'background-image:url('+item.thumb+')'"
+  >
+<!--    <video id="preview-player" class="video-js vjs-big-play-centered" ref="video">
+      <track src="http://192.168.1.126/rss/test.vtt" srclang="en" label="English" kind="caption" default>
+    </video>-->
+<!--    <video id="example_video_1" class="video-js vjs-default-skin" controls preload="none" width="640" height="264" poster="http://vjs.zencdn.net/v/oceans.png" data-setup="{plugins: { airplayButton: {} }}">
+      <source src="http://api.frdic.com/api/v3/media/mp3/501fe7f1-54f1-11e8-b509-9b8cbe101d82?type=mp4&filename=501fe7f1-54f1-11e8-b509-9b8cbe101d82.mp4" type="video/mp4">
+      <source src="http://vjs.zencdn.net/v/oceans.webm" type="video/webm">
+      <source src="http://vjs.zencdn.net/v/oceans.ogv" type="video/ogg">
+      <track kind="captions" src="http://192.168.1.126/rss/example-captions.vtt" srclang="en" label="English"></track>
+      &lt;!&ndash; Tracks need an ending tag thanks to IE9 &ndash;&gt;
+      <track kind="subtitles" src="http://192.168.1.126/rss/example-captions.vtt" srclang="en" label="English"></track>
+      &lt;!&ndash; Tracks need an ending tag thanks to IE9 &ndash;&gt;
+      <p class="vjs-no-js">To view this video please enable JavaScript, and consider upgrading to a web browser that <a href="http://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a></p>
+    </video>-->
+    <span style="
+    color: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    font-size:60px;
+    transform: translate(-50%, -50%);
+" :class='{"icon-pause":playing,"icon-play":!playing}' @touchstart="togglePlay" ></span>
   </div>
 </template>
 
 <script>
-  // lib
-  import _videojs from 'video.js'
-  const videojs = window.videojs || _videojs
-
-  // pollfill
-  if (typeof Object.assign != 'function') {
-    Object.defineProperty(Object, 'assign', {
-      value(target, varArgs) {
-        if (target == null) {
-          throw new TypeError('Cannot convert undefined or null to object')
-        }
-        const to = Object(target)
-        for (let index = 1; index < arguments.length; index++) {
-          const nextSource = arguments[index]
-          if (nextSource != null) {
-            for (const nextKey in nextSource) {
-              if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
-                to[nextKey] = nextSource[nextKey]
-              }
-            }
-          }
-        }
-        return to
-      },
-      writable: true,
-      configurable: true
-    })
-  }
-
-  // as of videojs 6.6.0
-  const DEFAULT_EVENTS = [
-    'loadeddata',
-    'canplay',
-    'canplaythrough',
-    'play',
-    'pause',
-    'waiting',
-    'playing',
-    'ended',
-    'error'
-  ]
 
   // export
   export default {
     name: 'video-player',
     props: {
-      start: {
-        type: Number,
-        default: 0
-      },
-      crossOrigin: {
-        type: String,
-        default: ''
-      },
-      playsinline: {
-        type: Boolean,
-        default: false
-      },
-      customEventName: {
-        type: String,
-        default: 'statechanged'
-      },
-      options: {
+      item: {
         type: Object,
         required: true
-      },
-      events: {
-        type: Array,
-        default: () => []
-      },
-      globalOptions: {
-        type: Object,
-        default: () => ({
-          // autoplay: false,
-          controls: true,
-          // preload: 'auto',
-          // fluid: false,
-          // muted: false,
-          controlBar: {
-            remainingTimeDisplay: false,
-            playToggle: {},
-            progressControl: {},
-            fullscreenToggle: {},
-            volumeMenuButton: {
-              inline: false,
-              vertical: true
-            }
-          },
-          techOrder: ['html5'],
-          plugins: {}
-        })
-      },
-      globalEvents: {
-        type: Array,
-        default: () => []
       }
+
     },
     data() {
       return {
-        player: null,
-        reseted: true
+        reseted: true,
+        playing: false
       }
     },
     mounted() {
-      if (!this.player) {
-        this.initialize()
-      }
+
     },
     beforeDestroy() {
-      if (this.player) {
-        this.dispose()
-      }
+
     },
     methods: {
       initialize() {
+      // videojs options
 
-        // videojs options
-        const videoOptions = Object.assign({}, this.globalOptions, this.options)
-
-        // ios fullscreen
-        if (this.playsinline) {
-          this.$refs.video.setAttribute('playsinline', this.playsinline)
-          this.$refs.video.setAttribute('webkit-playsinline', this.playsinline)
-          this.$refs.video.setAttribute('x5-playsinline', this.playsinline)
-          this.$refs.video.setAttribute('x5-video-player-type', 'h5')
-          this.$refs.video.setAttribute('x5-video-player-fullscreen', false)
-        }
-
-        // cross origin
-        if (this.crossOrigin !== '') {
-          this.$refs.video.crossOrigin = this.crossOrigin
-          this.$refs.video.setAttribute('crossOrigin', this.crossOrigin)
-        }
-
-        // emit event
-        const emitPlayerState = (event, value) => {
-          if (event) {
-            this.$emit(event, this.player)
-          }
-          if (value) {
-            this.$emit(this.customEventName, { [event]: value })
-          }
-        }
-
-        // avoid error "VIDEOJS: ERROR: Unable to find plugin: __ob__"
-        if (videoOptions.plugins) {
-          delete videoOptions.plugins.__ob__
-        }
-
-        // videoOptions
-        // console.log('videoOptions', videoOptions)
-
-        // player
-        const self = this
-        this.player = videojs(this.$refs.video, videoOptions, function() {
-
-          // events
-          const events = DEFAULT_EVENTS.concat(self.events).concat(self.globalEvents)
-
-          // watch events
-          const onEdEvents = {}
-          for (let i = 0; i < events.length; i++) {
-            if (typeof events[i] === 'string' && onEdEvents[events[i]] === undefined) {
-              (event => {
-                onEdEvents[event] = null
-                this.on(event, () => {
-                  emitPlayerState(event, true)
-                })
-              })(events[i])
-            }
-          }
-
-          // watch timeupdate
-          this.on('timeupdate', function() {
-            emitPlayerState('timeupdate', this.currentTime())
-          })
-
-          // player readied
-          self.$emit('ready', this)
-        })
       },
-      dispose(callback) {
-        if (this.player && this.player.dispose) {
-          if (this.player.techName_ !== 'Flash') {
-            this.player.pause && this.player.pause()
-          }
-          this.player.dispose()
-          this.player = null
-          this.$nextTick(() => {
-            this.reseted = false
-            this.$nextTick(() => {
-              this.reseted = true
-              this.$nextTick(() => {
-                callback && callback()
-              })
-            })
+      done(p) {
+
+        this.playing = false
+        this.$emit('playEvent', 'done')
+      },
+      togglePlay() {
+        console.log('play...')
+          this.playing = !this.playing
+          console.log('play this.playing:' + this.playing)
+          this.play()
+
+      },
+      play() {
+        if (this.playing == false) return
+        console.log(this.item)
+        let item = this.item
+        console.log('play+this.playing:' + this.playing)
+        this.$emit('playEvent', 'play')
+
+        window.plugins.streamingMedia.playVideo(item.audio, {shouldAutoClose: false, successCallback: this.done, errorCallback: this.done})
+
+        setTimeout( ()=> {
+          item.getSrt().then(srt => {
+            console.log('srt:' + srt)
+            window.plugins.streamingMedia.addSrt(item.audio, {srt: srt, shouldAutoClose: false, successCallback: this.done, errorCallback: this.done})
+          }).catch(e=>{
+            console.log(e)
           })
-          /*
-          if (!this.$el.children.length) {
-            const video = document.createElement('video')
-            video.className = 'video-js'
-            this.$el.appendChild(video)
-          }
-          */
-        }
+        },1000);
+
       }
     },
     watch: {
-      options: {
+
+/*
+      item: {
         deep: true,
-        handler(options, oldOptions) {
-          this.dispose(() => {
-            if (options && options.sources && options.sources.length) {
-              this.initialize()
-            }
-          })
+        handler(item, oldItem) {
+          console.log('playing...' + this.playing)
+          if (item.ID != oldItem.ID) {
+            this.play()
+          }
         }
       }
+      */
     }
   }
 </script>
+<style>
+  .vjs-paused .vjs-big-play-button,
+  .vjs-paused.vjs-has-started .vjs-big-play-button {
+    display: block;
+  }
+  .video-js .vjs-big-play-button{
+    font-size: 2.5em;
+    line-height: 2.3em;
+    height: 2.5em;
+    width: 2.5em;
+    -webkit-border-radius: 2.5em;
+    -moz-border-radius: 2.5em;
+    border-radius: 2.5em;
+    background-color: #73859f;
+    background-color: rgba(115,133,159,.5);
+    border-width: 0.15em;
+    margin-top: -1.25em;
+    margin-left: -1.75em;
+  }
+  /* 中间的播放箭头 */
+  .vjs-big-play-button .vjs-icon-placeholder {
+    font-size: 1.63em;
+  }
+  /* 加载圆圈 */
+  .vjs-loading-spinner {
+    font-size: 2.5em;
+    width: 2em;
+    height: 2em;
+    border-radius: 1em;
+    margin-top: -1em;
+    margin-left: -1.5em;
+  }
+  .video-js.vjs-playing .vjs-tech {
+    pointer-events: auto;
+  }
+</style>

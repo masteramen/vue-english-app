@@ -2,48 +2,52 @@
   <page title="home" :no-back="true">
     <m-header slot="navbar"  :data="songs"></m-header>
     <div style="position:absolute;top:44px;bottom:60px;left:0;right:0">
-        <div class="articles" ref="articles">
 
-          <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
-            <div>
-              <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div v-if="lastFetchTime">上次刷新：{{lastFetchTime|formatDate2}} </div></div>
-              <ul>
-                <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
+          <div class="articles" ref="articles">
+
+            <scroll :data="songs" class="toplist" ref="toplist" :listenScroll="true" @scroll="onScroll" :pullDownConfig="pullDownConfig" @pullingDown="onPullingDown">
+              <div>
+                <div ref="topbar" style="position:absolute;width:100%;left:0;top:-50px;text-align:center;color:#999;"><div>{{pullDownTip}}</div><div v-if="lastFetchTime">上次刷新：{{lastFetchTime|formatDate2}} </div></div>
+                <ul>
+                  <li @click="selectItem(song,index)" class="item" :class="{selected:index===currentIndex}" v-for="(song,index) in songs">
                     <div class="progressbar" :style="'width: '+(song.percent || 0)+'%;'"  v-if="downloadAll && song.percent!=100"></div>
-                  <div class="sequenceList">
-                    <div class="song">
-                      <div>{{song.TITLE}}</div>
-                      <lazy-component @show="handlerTSCNTITLE(song)" v-if="reload">
-                        {{song.TITLE_CN}}
-                      </lazy-component>
-                    </div>
+                    <div class="sequenceList">
+                      <div class="song">
+                        <div>{{song.title}}</div>
+                        <lazy-component @show="handlerTSCNtitle(song)" v-if="reload">
+                          {{song.title_CN}}
+                        </lazy-component>
+                      </div>
 
-                    <div class="summary">
-                      <div class="summaryWrap">
-                        <span v-if="song.ORG_SITE">{{song.ORG_SITE}}</span> <span v-if="song.ORG_SITE">|</span>
-                        <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
-                        <span>{{song.POST_DATE|formatDate}}</span>
-                        <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
-                        <i v-if="song.AUDIO_URL" :class="{'icon-play':song.AUDIO_URL}" ></i>
-                        <i class="icon-success"  v-if="song.TOTAL"></i>
+                      <div class="summary">
+                        <div class="summaryWrap">
+                          <span v-if="song.ORG_SITE">{{song.ORG_SITE}}</span> <span v-if="song.ORG_SITE">|</span>
+                          <span v-if="song.TOTAL">{{song.TOTAL&&((song.TOTAL/1024/1024).toFixed(2)+' MB')||'未知大小'}} |</span>
+                          <span>{{song.pubDate}}</span>
+                          <span v-if="song.DURATION">| {{song.DURATION&&(Array(2).join('0') + parseInt(song.DURATION/60)).slice(-2)+':'+(Array(2).join('0') + parseInt(song.DURATION%60)).slice(-2)||'未知时长'}}</span>
+                          <i v-if="song.audio" :class="{'icon-play':song.audio}" ></i>
+                          <i class="icon-success"  v-if="song.TOTAL"></i>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <lazy-component v-if="song.IMG_URL" @show="handlerIMG(song,song.IMG_URL)" class="icon" >
-                    <img  :id="song.ID"  :dataSrc="song.IMG_URL" v-lazy="song.IMG_URL"   />
-                  </lazy-component>
-                </li>
-              </ul>
-            </div>
-            <div class="loading-container" v-show="!songs.length">
-              <loading v-if="subscriptionList.length!==0"></loading>
-              <div v-if="subscriptionList.length===0" style="color:black;line-height: 2em;" >
-                你还没有添加订阅源，请先点击 订阅 -&gt; <span>+新的订阅</span> 或者点击 <b style="color:green;" @click="addNewSubscription()">这里</b> 添加订阅源。
+                    <lazy-component v-if="song.thumb" @show="handlerIMG(song,song.thumb)" class="icon" >
+                      <img  :id="song.ID"  :dataSrc="song.thumb" v-lazy="song.thumb"   />
+                    </lazy-component>
+                  </li>
+                </ul>
               </div>
-            </div>
-          </scroll>
+              <div class="loading-container" v-show="!songs.length">
+                <loading v-if="subscriptionList.length!==0"></loading>
+                <div v-if="subscriptionList.length===0" style="color:black;line-height: 2em;" >
+                  你还没有添加订阅源，请先点击 订阅 -&gt; <span>+新的订阅</span> 或者点击 <b style="color:green;" @click="addNewSubscription()">这里</b> 添加订阅源。
+                </div>
+              </div>
+            </scroll>
 
-        </div>
+          </div>
+
+
+
     </div>
 
   </page>
@@ -61,8 +65,10 @@
   import {getRConfig} from 'api/config'
   import {mapGetters, mapMutations, mapActions} from 'vuex'
   import ProgressCircle from 'base/progress-circle/progress-circle'
+  import 'c-swipe/dist/swipe.css'
+  import { Swipe, SwipeItem } from 'c-swipe'
 
-  export default {
+export default {
     mixins: [playlistMixin],
     created() {
 
@@ -70,27 +76,19 @@
     mounted() {
       (async () => {
         let time = this.subscriptionList && this.subscriptionList.length ? 0 : 6 * 1000
-
         setTimeout(() => {
           this._getLatestArticles()
-          this.pulldownRefreshDataList()
+          console.log(' getOrSetRefreshTime():'+ getOrSetRefreshTime())
+          if(new Date().getTime() - getOrSetRefreshTime()>360000){
+            this.pulldownRefreshDataList()
+          }
         }, time)
 
         let rConfig = await getRConfig()
-        // let first = !this.subscriptionList || this.subscriptionList.length === 0
         if (rConfig.rss && rConfig.rss.items) {
           for (let subscription of rConfig.rss.items) {
-           // console.log(subscription)
-          //  if (first) {
-            //  subscription.enable = true
-           // }
             this.saveSubcription(subscription)
           }
-        }
-
-        if (!this.subscriptionList || this.subscriptionList.length === 0) {
-          this._getLatestArticles()
-          this.pulldownRefreshDataList()
         }
       })()
     },
@@ -110,9 +108,6 @@
       }
     },
     filters: {
-      formatDate(time) {
-        return formatDate(new Date(parseInt(time)), 'yyyy-MM-dd')
-      },
       formatDate2(time) {
         return formatDate(new Date(parseInt(time)), 'yyyy-MM-dd hh:mm:ss')
       }
@@ -132,8 +127,8 @@
       handlerIMG(item, url) {
         downloadArtilePic(item)
       },
-      handlerTSCNTITLE(item) {
-        if (!item.TITLE_CN && !item.TITLE.match(/[\u4e00-\u9fa5]/)) {
+      handlerTSCNtitle(item) {
+        if (!item.title_CN && !item.title.match(/[\u4e00-\u9fa5]/)) {
           (async () => {
             await item.tsTitle()
             this.$refs.toplist.refresh()
@@ -202,6 +197,14 @@
         'fullScreen'
       ]),
       selectItem(item, index) {
+        console.log(item.audio)
+
+        /*if (item.audio && item.audio.match(/\.mp4/)) {
+          item.getFinalAudioUrl().then(url => {
+            window.plugins.streamingMedia.playVideo(item.audio, {srt: 'http://192.168.1.126/rss/test.srt'})
+          })
+          return
+        }*/
         this.selectCurIndex({index})
         let path = '/detail'
         if (item.isAudio()) path = '/player'
@@ -253,14 +256,16 @@
       },
       subscriptionList() {
         this._getLatestArticles()
-        this.pulldownRefreshDataList()
+        //this.pulldownRefreshDataList()
       }
     },
     components: {
       Scroll,
       ProgressCircle,
       Loading,
-      MHeader
+      MHeader,
+      Swipe,
+      SwipeItem
     }
   }
 </script>

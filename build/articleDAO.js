@@ -2,34 +2,7 @@ const axios = require('axios')
 const $ = require('cheerio')
 const url = require('url')
 const request = require('request');
-const sqlite3 = require('sqlite3').verbose();
 
-const db = new sqlite3.Database('db.db');
-
-let createDBSQL=`
-CREATE TABLE IF NOT EXISTS t_article(
-   ID INTEGER PRIMARY KEY     AUTOINCREMENT,
-   TITLE           TEXT NOT NULL,
-   CONTENT         TEXT,
-   CONTENT_URL     TEXT,
-   CATEGORY        TEXT,
-   IMG_URL        TEXT,
-   AUDIO_URL        TEXT,
-   AUDIO_BYTES        ,
-   VIDEO_URL        TEXT,
-   LRC_URL        TEXT,
-   DURATION        TEXT,
-   ORG_SITE       TEXT,
-   REFERER        TEXT UNIQUE NOT NULL,
-   STATUS        TEXT ,
-   AUTHOR        TEXT ,
-   POST_DATE  TEXT
-)
-`
-db.serialize(function() {
-	console.log(createDBSQL);
-	db.run(createDBSQL)
-});
 
 function get51VoaDetail(theurl){
 	return axios.get(theurl, {
@@ -89,15 +62,15 @@ function get51VoaDetail(theurl){
 				    resolve(detail)
 				 });
 				})
-	
+
 			})
-		
+
 	})
 }
 function get51voaList(){
 
 	let theurl = 'http://www.51voa.com/'
-	
+
 	console.log(theurl)
 	axios.get(theurl, {
 		headers: {
@@ -135,9 +108,9 @@ function get51voaList(){
 
 							if (detail.audioUrl) {
 								console.log(detail)
-								db.run('insert into t_article (title,content,audio_url,img_url,ORG_SITE,referer,lrc_url,post_date,AUTHOR,AUDIO_BYTES) values(?,?,?,?,?,?,?,?,?,?)',
+								db.run('insert into t_article (title,content,audio_url,img_url,ORG_SITE,referer,post_date,AUTHOR,AUDIO_BYTES) values(?,?,?,?,?,?,?,?,?,?)',
 									detail.title, detail.content, detail.audioUrl, detail.coverImageUrl, detail.orgSite,
-									detail.url,detail.lrcUrl,detail.dateTime,detail.by,detail.totalBytes
+									detail.url,detail.dateTime,detail.by,detail.totalBytes
 									, err => {
 										console.log(err)
 									})
@@ -159,10 +132,11 @@ function get51voaList(){
 	}).catch((e) => {
 		console.log(e)
 	})
-	
+
 }
 
 get51voaList()
+
 
 
 
@@ -282,35 +256,3 @@ function getDetail(theurl){
 }
 
 
- function getArticlesBasicInfo(lastTime){
- 	console.log(lastTime);
- 	let fromTime =lastTime || 1
- 	console.log(`SELECT id,title,POST_DATE,AUTHOR,referer,AUDIO_BYTES FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`);
- 	return new Promise((resolve,reject)=>{
-		db.all(`SELECT id,org_site,title,POST_DATE,AUTHOR,referer ,IMG_URL,AUDIO_URL,AUDIO_BYTES FROM t_article where POST_DATE > ${fromTime} order by POST_DATE desc`, function(err, all) {
-			if(err)console.log(err)
-	        resolve(all)
-	    });
-
- 	})
-
-}
-
-function findById(id){
-
-	 	return new Promise((resolve,reject)=>{
-	 		console.log('select ...')
-			db.each("SELECT *  FROM t_article where id=?",id, function(err, row) {
-				console.log(err)
-				//console.log(row)
-
-		         return resolve(row)
-		    });
-
-	 	})
-
-}
-
-//getArticles()
-
-module.exports={getArticlesBasicInfo,findById}

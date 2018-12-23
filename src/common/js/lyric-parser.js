@@ -82,7 +82,6 @@ export default class Lyric {
   _playRest() {
     let line = this.lines[this.curNum]
     let delay = line.time - (+new Date() - this.startStamp)
-    console.log(`dalay:${delay} , curNum:${this.curNum} ,state:${this.state } lines.length:${this.lines.length}`)
     this.timer = setTimeout(() => {
       this._callHandler(this.curNum++)
       if (this.curNum < this.lines.length && this.state === STATE_PLAYING) {
@@ -92,7 +91,6 @@ export default class Lyric {
   }
 
   play(startTime = 0, skipLast) {
-    console.log('play...kdfjdfj')
     if (!this.lines.length) {
       return
     }
@@ -125,7 +123,6 @@ export default class Lyric {
 
   stop() {
     this.state = STATE_PAUSE
-    console.log('sssssssssssss')
     clearTimeout(this.timer)
   }
 

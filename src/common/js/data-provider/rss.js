@@ -1,4 +1,5 @@
 import tld from 'tldjs'
+import {formatDate} from 'common/js/formatDate'
 const $ = require('jquery')
 import axios from 'axios'
 import {encrypt2, decrypt2} from '../crypto'
@@ -25,38 +26,22 @@ function entityToString(entity) {
 function getInfoFromItem(el) {
   let itemLink = decodeURIComponent(el.link)
   let link = itemLink
-  let title = el.title
-  let audio = ''
-  let pubDate = new Date(el.pubDate)
-  console.log(`itemLink:${itemLink}`)
+  let map = {}
+  el.pubDate && (map['pubDate'] = formatDate(el.pubDate, 'yyyy-MM-dd'))
+  map['title'] = el.title
 
-  if (itemLink.lastIndexOf('__=') > 0) {
+  if (itemLink.split('__=').length > 1) {
     link = itemLink.substring(0, itemLink.lastIndexOf('__='))
     let linkInfo = itemLink.substring(itemLink.lastIndexOf('__=') + 3)
-    console.log(`linkInfo:${linkInfo}`)
     var texts = linkInfo.split('|')
-    if (texts.length > 0) {
-      texts.forEach(t => {
-        if (t.toLowerCase().endsWith('.mp3')) {
-          audio = t
-        } else if (t.toLowerCase().endsWith('.lrc')) {
-
-        }
-
-        var dateM = t.match(/(\d{4})(\d{2})(\d{2})/)
-        console.log(JSON.stringify(dateM))
-        if (dateM) pubDate = new Date(`${dateM[1]}-${dateM[2]}-${dateM[3]}`)
-        else {
-          dateM = t.match(/(\d{4})-(\d{1,2})-(\d{1,2})/)
-          console.log(JSON.stringify(dateM))
-
-          if (dateM) pubDate = new Date(`${dateM[1]}-${PrefixInteger(dateM[2], 2)}-${PrefixInteger(dateM[3], 2)}`)
-        }
-      })
+    if (texts.length > 1) {
+      for (var i = 0; i < texts.length; i += 2) {
+        map[texts[i]] = texts[i + 1]
+      }
     }
+    map['link'] = link
   }
-
-  return {title, audio, pubDate, link}
+  return map
 }
 export const rss = {
   getItems: function(feedItem, response) {
@@ -65,28 +50,24 @@ export const rss = {
     for (let i = 0; i < feed.item.length; i++) {
       let item = feed.item[i]
       let feedId = feedItem.feedId
-      var {title, audio, pubDate, link} = getInfoFromItem(item)
+      let map = getInfoFromItem(item)
+      map['feedId'] = rssFeedId + feedId
+      map['feedType'] = feedItem.feedType
+      let domain = tld.getDomain(feedId)
+      map['ORG_SITE'] = feedItem.alias || domain
 
-      var domain = tld.getDomain(feedId)
-      results.push({
-        'REFERER': link,
-        'ORG_SITE': feedItem.alias || domain,
-        'TITLE': title,
-        'FEED_ID': rssFeedId + feedId,
-        'FEED_TYPE': feedItem.feedType,
-        'POST_TIME': pubDate.getTime(),
-        'AUDIO_URL': audio
-      })
+      results.push(map)
     }
+    console.log('results:')
     return results
   },
 
   url2io: function(detailObj) {
-    // var feed = `https://www.freefullrss.com/feed.php?url=${encodeURIComponent(`http://www.jfox.info/rss.php?title=test&link=${encodeURIComponent(detailObj.REFERER)}`)}&max=1&links=preserve&exc=&submit=Create+Full+Text+RSS`;
+    // var feed = `https://www.freefullrss.com/feed.php?url=${encodeURIComponent(`http://www.jfox.info/rss.php?title=test&link=${encodeURIComponent(detailObj.link)}`)}&max=1&links=preserve&exc=&submit=Create+Full+Text+RSS`;
 
-    // let feed = `http://www.jfox.info/rss/?feed=${detailObj.FEED_ID.substring(rssFeedId.length)}&link=${detailObj.REFERER}&title=${detailObj.TITLE}`
+    // let feed = `http://www.jfox.info/rss/?feed=${detailObj.feedId.substring(rssFeedId.length)}&link=${detailObj.link}&title=${detailObj.title}`
 
-    let encryptStr = encrypt2(JSON.stringify({feed: detailObj.FEED_ID, link: detailObj.REFERER, title: detailObj.TITLE, lyric: detailObj.CONTENT ? 1 : 0}))
+    let encryptStr = encrypt2(JSON.stringify({feed: detailObj.feedId, link: detailObj.link, title: detailObj.title, lyric: detailObj.CONTENT ? 1 : 0}))
     let feed = `${host}/rss/?_e=${encodeURIComponent(encryptStr)}`
     return axios.get(feed, {}).then((res) => {
       let content = res.data.trim()
@@ -100,10 +81,10 @@ export const rss = {
         let $content = $('<div/>').append(
           entityToString(feedItem.description)
         )
-        var {title, audio, pubDate} = getInfoFromItem(feedItem)
-        if (!detailObj.TITLE && title)detailObj.TITLE = title
-        if (!detailObj.AUDIO_URL && audio)detailObj.AUDIO_URL = audio
-        if (!detailObj.POST_TIME && pubDate)detailObj.POST_TIME = pubDate
+        let map = getInfoFromItem(feedItem)
+        for (let k in map) {
+          if (!detailObj[k] && map[k])detailObj[k] = map[k]
+        }
 
         $content.find('*').filter(function() {
           return $(this).css('display') === 'none'

@@ -7,8 +7,8 @@ export async function saveArticleToRemote(article, lyric, lines) {
   await dataManager.update(article)
   console.log(lyric)
   window.lyric = lyric
-  let str = `[ti:${article.TITLE}]\n`
-  str += `${article.TITLE_CN}\n`
+  let str = `[ti:${article.title}]\n`
+  str += `${article.title_CN}\n`
   for (let i = 0; i < lyric.lines.length; i++) {
     let line = lyric.lines[i]
     let m = fixnum(parseInt(line.time / 60000))
@@ -20,11 +20,11 @@ export async function saveArticleToRemote(article, lyric, lines) {
   }
 
   const data = Object.assign({}, {
-    link: article.REFERER,
+    link: article.link,
     content: str,
-    audio: article.AUDIO_URL,
-    title: article.TITLE,
-    pubDate: parseInt(article.POST_DATE)
+    audio: article.audio,
+    title: article.title,
+    pubDate: parseInt(article.pubDate)
   }, {})
   let encryptStr = encrypt2(JSON.stringify(data))
   console.log(article)

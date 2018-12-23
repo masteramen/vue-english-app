@@ -1,22 +1,22 @@
 const ddl = `
 CREATE TABLE IF NOT EXISTS t_article(
    ID INTEGER PRIMARY KEY     AUTOINCREMENT,
-   TITLE           TEXT NOT NULL,
-   TITLE_CN         TEXT,
+   title           TEXT NOT NULL,
+   title_CN         TEXT,
    CONTENT         TEXT,
    CATEGORY        TEXT,
-   IMG_URL        TEXT,
-   AUDIO_URL        TEXT,
+   thumb        TEXT,
+   audio        TEXT,
    TOTAL        ,
    VIDEO_URL        TEXT,
    LRC_OK        TEXT,
    DURATION        TEXT,
    ORG_SITE       TEXT,
-   REFERER        TEXT UNIQUE NOT NULL,
+   link        TEXT UNIQUE NOT NULL,
    AUTHOR        TEXT ,
-   POST_DATE  TEXT,
+   pubDate  TEXT,
    STATUS  TEXT DEFAULT 'A',
-   FEED_ID    TEXT,
+   feedId    TEXT,
    LAST_DOWNLOAD_DATE TEXT
 )
 `
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS T_DICT(
 `
 const feedDDL = `
 CREATE TABLE IF NOT EXISTS T_FEED(
-   FEED_ID           TEXT PRIMARY KEY,
-   FEED_TYPE         TEXT,
+   feedId           TEXT PRIMARY KEY,
+   feedType         TEXT,
    FEED_ALIAS         TEXT,
    FEED_STATUS         TEXT
 )

@@ -2,7 +2,7 @@
   <div class="player" >
   <div class="normal-player"  ref="playerWrap">
     <div class="background">
-      <img width="100%" height="100%" :src="curArticle.IMG_URL">
+      <img width="100%" height="100%" :src="curArticle.thumb">
     </div>
     <div class="top">
       <div style="position: relative">
@@ -15,9 +15,9 @@
     <div class="middle" ref="middle">
       <scroll class="middle-l" ref="lyricList" :data="currentLyric && currentLyric.lines" :pullup="true"   >
         <div class="lyric-wrapper" >
-          <p class="cover"><img :src="curArticle.IMG_URL" style="max-width:100%;"/></p>
+          <p class="cover"><img :src="curArticle.thumb" style="max-width:100%;"/></p>
           <p  class="text" v-html="headerContent"></p>
-          <p>{{curArticle.TITLE_CN}}</p>
+          <p>{{curArticle.title_CN}}</p>
           <div v-if="currentLyric" >
             <div  v-for="(line,index) in currentLyric.lines" >
               <p ref="lyricLine"

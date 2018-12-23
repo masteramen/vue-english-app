@@ -83,14 +83,13 @@ function tranformName(str) {
 export function getLatestArticles() {
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
-      let sql = `SELECT t.* ,f.* FROM  T_ARTICLE t,t_feed f where t.feed_id = f.feed_id  ORDER BY POST_DATE DESC`
+      let sql = `SELECT t.* ,f.* FROM  T_ARTICLE t,t_feed f where t.feedId = f.feedId  ORDER BY pubDate DESC`
 
       tx.executeSql(sql, [], function (tx, results) {
         var contents = []
         for (let i = 0; i < results.rows.length; i++) {
           contents.push(results.rows.item(i))
         }
-        console.log(contents)
         resolve({'code': 0, 'contents': contents})
       }, function (tx, error) {
         console.log(error)
@@ -103,7 +102,7 @@ export function getLatestArticles() {
 export function getOldArticlesAndMarkDelete(time) {
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
-      let sql = `UPDATE T_ARTICLE SET STATUS = 'D' WHERE POST_DATE< ${time} AND STATUS='A'`
+      let sql = `UPDATE T_ARTICLE SET STATUS = 'D' WHERE pubDate< ${time} AND STATUS='A'`
 
       tx.executeSql(sql, [], function (tx, results) {
         resolve()
@@ -114,7 +113,7 @@ export function getOldArticlesAndMarkDelete(time) {
   }).then(() => {
     return new Promise((resolve, reject) => {
       webdb.transaction(function (tx) {
-        let sql = `SELECT * FROM  T_ARTICLE WHERE STATUS='D' AND POST_DATE< ${time} ORDER BY POST_DATE DESC`
+        let sql = `SELECT * FROM  T_ARTICLE WHERE STATUS='D' AND pubDate< ${time} ORDER BY pubDate DESC`
 
         tx.executeSql(sql, [], function (tx, results) {
           var contents = []
@@ -164,14 +163,14 @@ export function update(id, name, value) {
 export function saveArticles(articles) {
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
-      let sql = `insert into t_article(id,org_site,title,post_date,author,REFERER,AUDIO_URL,IMG_URL,AUDIO_BYTES) values(?,?,?,?,?,?,?,?,?)`
+      let sql = `insert into t_article(id,org_site,title,post_date,author,link,audio,thumb,AUDIO_BYTES) values(?,?,?,?,?,?,?,?,?)`
       // console.log(articles)
       // console.log(articles.length)
       for (let i = 0; i < articles.length; i++) {
         let article = articles[i]
         // console.log(article)
 
-        tx.executeSql(sql, [article.ID, article.ORG_SITE, article.TITLE, article.POST_DATE, article.AUTHOR, article.REFERER, article.AUDIO_URL, article.IMG_URL, article.AUDIO_BYTES], function (tx, result) {
+        tx.executeSql(sql, [article.ID, article.ORG_SITE, article.title, article.pubDate, article.AUTHOR, article.link, article.audio, article.thumb, article.AUDIO_BYTES], function (tx, result) {
           console.log(result)
         }, function (tx, error) {
           console.log(error)
@@ -188,7 +187,7 @@ export function saveFeed(feed) {
   console.log(feed)
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
-      let sql = `insert into T_FEED(FEED_ID,FEED_TYPE,FEED_ALIAS,FEED_STATUS) values(?,?,?,?)`
+      let sql = `insert into T_FEED(feedId,feedType,FEED_ALIAS,FEED_STATUS) values(?,?,?,?)`
       tx.executeSql(sql, [feed.feedId, feed.feedType||'', feed.title||'', feed.status||''], function (tx, result) {
         resolve()
         console.log(result)
@@ -202,7 +201,7 @@ export function saveFeed(feed) {
 export function removeFeed(feed) {
   return new Promise((resolve, reject) => {
     webdb.transaction(function (tx) {
-      let sql = `delete from t_feed where feed_id=?`
+      let sql = `delete from t_feed where feedId=?`
       tx.executeSql(sql, [feed.feedId], function (tx, result) {
         resolve()
         console.log(result)

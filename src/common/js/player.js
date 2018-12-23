@@ -29,32 +29,22 @@ class Player {
     )
     tmpmedia.play()
   }
-  loopplay(url) {
-    if (this.timer) clearInterval(this.timer)
-    if (this.timerDur)clearInterval(this.timerDur)
-    if (this.my_media) {
-      this.my_media.pause()
-      this.my_media.release()
-      delete this.my_media
+  bgMode() {
+    if(this.bg_silent!=null){
+      this.bg_silent.play({numberOfLoops: new Date().getTime(), playAudioWhenScreenIsLocked: true});
+      return
     }
-    this.my_media = new Media('silent.mp3',
+    this.bg_silent = new Media(cordova.file.applicationDirectory + 'www/silent.mp3',
       () => {
-        console.log('play :' + url)
       },
       err => {
         console.log(err)
       },
       mediaStatus => {
         console.log(`mediaStatus:${mediaStatus}`)
-        if (mediaStatus == 5) {
-          console.log('play again')
-          this.play()
-          console.log('play again2')
-        }
       }
     )
-    this.audioUrl = url
-    this.my_media.play({numberOfLoops: new Date().getTime()})
+    this.bg_silent.play({numberOfLoops: new Date().getTime(), playAudioWhenScreenIsLocked: true})
     console.log('play silent model.....')
   }
 
@@ -70,6 +60,7 @@ class Player {
         this.my_media.release()
         delete this.my_media
       }
+      //this.bgMode();
       this.my_media = new Media(url,
         () => {
           console.log('playAudio():Audio Success')
